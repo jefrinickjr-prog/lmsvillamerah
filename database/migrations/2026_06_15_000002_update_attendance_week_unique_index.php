@@ -10,7 +10,13 @@ return new class extends Migration
     {
         Schema::table('attendances', function (Blueprint $table) {
             $table->dropForeign(['student_id']);
+        });
+
+        Schema::table('attendances', function (Blueprint $table) {
             $table->dropUnique(['student_id', 'week_start']);
+        });
+
+        Schema::table('attendances', function (Blueprint $table) {
             $table->unique(['classroom_id', 'student_id', 'week_start']);
             $table->foreign('student_id')->references('id')->on('users')->cascadeOnDelete();
         });
@@ -20,7 +26,13 @@ return new class extends Migration
     {
         Schema::table('attendances', function (Blueprint $table) {
             $table->dropForeign(['student_id']);
+        });
+
+        Schema::table('attendances', function (Blueprint $table) {
             $table->dropUnique(['classroom_id', 'student_id', 'week_start']);
+        });
+
+        Schema::table('attendances', function (Blueprint $table) {
             $table->unique(['student_id', 'week_start']);
             $table->foreign('student_id')->references('id')->on('users')->cascadeOnDelete();
         });
