@@ -10,7 +10,7 @@
       <p class="mt-2 text-slate-500">Pantau kehadiran siswa berdasarkan kelas dan minggu pertemuan.</p>
     </div>
 
-    <form method="GET" action="{{ route('attendances.index') }}" class="grid gap-3 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-[1fr_1fr_auto]">
+    <form method="GET" action="{{ route('attendances.index') }}" class="grid w-full gap-3 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:w-auto lg:grid-cols-3">
       <select name="classroom_id" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100">
         @foreach($classrooms as $classroom)
           <option value="{{ $classroom->id }}" @selected($selectedClassroom?->id === $classroom->id)>{{ $classroom->title }} - {{ $classroom->branch ?? 'Cabang' }} - {{ $classroom->teacher->name ?? 'Pengajar' }}</option>
@@ -51,8 +51,8 @@
         <input type="hidden" name="classroom_id" value="{{ $selectedClassroom->id }}">
         <input type="hidden" name="week" value="{{ $weekStart->toDateString() }}">
 
-        <div class="overflow-hidden rounded-2xl border border-slate-100">
-          <table class="w-full text-left text-sm">
+        <div class="overflow-x-auto rounded-2xl border border-slate-100">
+          <table class="min-w-full text-left text-sm">
             <thead class="bg-slate-50 text-xs font-black uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="px-4 py-3">Hadir</th>
@@ -95,7 +95,7 @@
         </div>
 
         @if($students->isNotEmpty())
-          <button class="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700" type="submit">
+          <button class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 sm:w-auto" type="submit">
             <i class="fa-solid fa-floppy-disk"></i>
             Simpan Checklist Absensi
           </button>

@@ -48,10 +48,10 @@
             <iframe class="aspect-video w-full" src="{{ $material->youtube_embed_url }}" title="Video pembelajaran {{ $material->title }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
           </div>
         @endif
-        <div class="mt-5 flex items-center justify-between gap-3">
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="text-sm font-black text-indigo-600">Video pembelajaran</div>
           @if($canManageThisMaterial)
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <a href="{{ route('materials.edit', $material) }}" class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
                 <i class="fa-solid fa-pen-to-square"></i>
                 Edit

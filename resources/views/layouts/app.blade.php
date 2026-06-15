@@ -23,6 +23,23 @@
     @endif
     <style>
       body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      html, body { max-width: 100%; overflow-x: hidden; }
+      img, iframe, video { max-width: 100%; }
+      @media (max-width: 640px) {
+        h1, h2 { overflow-wrap: anywhere; }
+        main { min-width: 0; }
+        .rounded-3xl { border-radius: 1rem; }
+        .p-6 { padding: 1rem; }
+        .p-8, .p-10 { padding: 1.25rem; }
+        .text-3xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-4xl, .text-5xl { font-size: 2rem; line-height: 2.35rem; }
+        .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: 0 8px 18px rgb(15 23 42 / 0.08); }
+        table { min-width: 680px; }
+        input, select, textarea, button, a { max-width: 100%; }
+        main .inline-flex.rounded-2xl,
+        main form .inline-flex.rounded-2xl,
+        main form button.rounded-2xl { width: 100%; justify-content: center; }
+      }
     </style>
   </head>
   <body class="bg-slate-50 text-slate-900">
@@ -126,13 +143,13 @@
                 <button id="sidebarOpen" type="button" class="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 lg:hidden" aria-label="Buka sidebar">
                   <i class="fa-solid fa-bars"></i>
                 </button>
-                <div>
+                <div class="min-w-0">
                   <div class="text-sm font-semibold text-slate-500">Selamat datang,</div>
-                  <h1 class="text-lg font-extrabold tracking-tight sm:text-2xl">{{ $user->name }}</h1>
+                  <h1 class="truncate text-lg font-extrabold tracking-tight sm:text-2xl">{{ $user->name }}</h1>
                 </div>
               </div>
 
-              <div class="flex items-center gap-3">
+              <div class="flex shrink-0 items-center gap-2 sm:gap-3">
                 <div class="relative">
                   <button id="notifToggle" type="button" class="relative grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" aria-label="Buka notifikasi">
                     <i class="fa-regular fa-bell"></i>
@@ -140,7 +157,7 @@
                       <span class="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white">{{ $unread }}</span>
                     @endif
                   </button>
-                  <div id="notifMenu" class="absolute right-0 mt-3 hidden w-80 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-slate-200">
+                  <div id="notifMenu" class="absolute right-0 mt-3 hidden w-80 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-slate-200" style="max-width: calc(100vw - 2rem);">
                     <div class="border-b border-slate-100 px-4 py-3 font-extrabold">Notifikasi</div>
                     <div class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
                       @forelse($notifications as $notification)
@@ -168,7 +185,7 @@
                     </div>
                     <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
                   </button>
-                  <div id="userMenu" class="absolute right-0 mt-3 hidden w-52 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-slate-200">
+                  <div id="userMenu" class="absolute right-0 mt-3 hidden w-52 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-slate-200" style="max-width: calc(100vw - 2rem);">
                     <a class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" href="{{ route('profile.show') }}">Profil</a>
                     <form method="POST" action="{{ route('logout') }}">
                       @csrf
@@ -180,7 +197,7 @@
             </div>
           </header>
 
-          <main class="px-4 py-6 sm:px-6 lg:px-8">
+          <main class="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-7xl">
               @if(session('success'))
                 <div class="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">{{ session('success') }}</div>

@@ -12,3 +12,78 @@ body{font-family:var(--font-sans);}
 .card { @apply bg-white rounded-lg shadow-sm; }
 .badge { @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800; }
 
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+img,
+iframe,
+video {
+    max-width: 100%;
+}
+
+@media (max-width: 640px) {
+    h1,
+    h2 {
+        overflow-wrap: anywhere;
+    }
+
+    main {
+        min-width: 0;
+    }
+
+    .rounded-3xl {
+        border-radius: 1rem;
+    }
+
+    .p-6 {
+        padding: 1rem;
+    }
+
+    .p-8,
+    .p-10 {
+        padding: 1.25rem;
+    }
+
+    .text-3xl {
+        font-size: 1.5rem;
+        line-height: 2rem;
+    }
+
+    .text-4xl,
+    .text-5xl {
+        font-size: 2rem;
+        line-height: 2.35rem;
+    }
+
+    .shadow-lg,
+    .shadow-xl,
+    .shadow-2xl {
+        box-shadow: 0 8px 18px rgb(15 23 42 / 0.08);
+    }
+
+    table {
+        min-width: 680px;
+    }
+
+    input,
+    select,
+    textarea,
+    button,
+    a {
+        max-width: 100%;
+    }
+
+    main .inline-flex.rounded-2xl {
+        width: 100%;
+        justify-content: center;
+    }
+
+    main form .inline-flex.rounded-2xl,
+    main form button.rounded-2xl {
+        width: 100%;
+        justify-content: center;
+    }
+}

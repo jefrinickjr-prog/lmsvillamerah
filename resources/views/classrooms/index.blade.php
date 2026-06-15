@@ -27,7 +27,7 @@
         <div class="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
           Pengajar: {{ $classroom->teacher->name ?? '-' }}
         </div>
-        <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
           <a href="{{ route('classrooms.edit', $classroom) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
             <i class="fa-solid fa-pen-to-square"></i>
             Edit

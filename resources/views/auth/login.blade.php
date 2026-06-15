@@ -453,11 +453,20 @@
     @media (max-width: 560px) {
       .auth-page {
         padding: 18px;
+        place-items: start center;
       }
 
       .auth-form-panel,
       .auth-visual-panel {
         padding: 34px 22px;
+      }
+
+      .auth-card {
+        border-radius: 22px;
+      }
+
+      .auth-visual-panel {
+        display: none;
       }
 
       .auth-title {
