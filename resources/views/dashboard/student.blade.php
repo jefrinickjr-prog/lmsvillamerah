@@ -6,8 +6,10 @@
   @php
     $studentClass = auth()->user()->student_class;
     $branch = auth()->user()->branch;
+    $programType = \App\Models\User::normalizeProgramType(auth()->user()->program_type);
     $studentClassKeys = \App\Models\User::studentClassLookupKeys($studentClass);
     $latestTasks = \App\Models\Task::with('material.classroom')
+      ->whereHas('material', fn ($materialQuery) => $materialQuery->where('program_type', $programType))
       ->when($studentClassKeys === [], fn ($query) => $query->whereRaw('1 = 0'))
       ->when($studentClassKeys !== [], function ($query) use ($studentClassKeys) {
         $query->whereHas('material.classroom', function ($classroomQuery) use ($studentClassKeys) {
@@ -29,6 +31,7 @@
       <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Selamat belajar, {{ auth()->user()->name }}</h2>
       <div class="mt-2 flex flex-wrap gap-2">
         <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-black text-indigo-700">{{ $studentClass ?? 'Belum punya kelas program' }}</span>
+        <span class="inline-flex rounded-full bg-violet-50 px-3 py-1 text-sm font-black text-violet-700">{{ \App\Models\User::programTypeLabel($programType) }}</span>
         <span class="inline-flex rounded-full bg-cyan-50 px-3 py-1 text-sm font-black text-cyan-700">{{ $branch ?? 'Cabang belum diisi' }}</span>
         @if(auth()->user()->student_code)
           <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-700">{{ auth()->user()->student_code }}</span>

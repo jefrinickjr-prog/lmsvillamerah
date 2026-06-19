@@ -10,20 +10,32 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'student_class', 'branch', 'academic_year', 'student_code', 'photo_path', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'program_type', 'student_class', 'branch', 'academic_year', 'student_code', 'photo_path', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const PROGRAM_TYPES = [
+        'gambar' => 'Gambar',
+        'skolastik' => 'Skolastik',
+    ];
+
     public const STUDENT_CLASSES = [
-        'SR Gold',
-        'SR Minat Seni',
-        'SR Silver',
-        'SR Advance',
-        'SR Intermediate',
-        'SR SMP',
+        'gambar' => [
+            'SR Gold',
+            'SR Minat Seni',
+            'SR Silver',
+            'SR Advance',
+            'SR Intermediate',
+            'SR SMP',
+        ],
+        'skolastik' => [
+            'Skolastik Dasar',
+            'Skolastik Lanjutan',
+            'Skolastik Intensif',
+        ],
     ];
 
     public const BRANCHES = [
@@ -32,9 +44,28 @@ class User extends Authenticatable
         'Jakarta Selatan',
     ];
 
-    public static function studentClassOptions(): array
+    public static function programTypeOptions(): array
     {
-        return self::STUDENT_CLASSES;
+        return self::PROGRAM_TYPES;
+    }
+
+    public static function normalizeProgramType(?string $programType): string
+    {
+        return array_key_exists($programType, self::PROGRAM_TYPES) ? $programType : 'gambar';
+    }
+
+    public static function programTypeLabel(?string $programType): string
+    {
+        return self::PROGRAM_TYPES[self::normalizeProgramType($programType)] ?? self::PROGRAM_TYPES['gambar'];
+    }
+
+    public static function studentClassOptions(?string $programType = null): array
+    {
+        if ($programType !== null) {
+            return self::STUDENT_CLASSES[self::normalizeProgramType($programType)] ?? [];
+        }
+
+        return array_values(array_merge(...array_values(self::STUDENT_CLASSES)));
     }
 
     public static function branchOptions(): array

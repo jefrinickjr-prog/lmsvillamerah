@@ -43,6 +43,10 @@
             <div class="mt-1 font-extrabold text-slate-900">{{ $user->student_class }} - {{ $user->branch ?? 'Cabang belum diisi' }}</div>
           </div>
           <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Program</div>
+            <div class="mt-1 font-extrabold text-violet-600">{{ \App\Models\User::programTypeLabel($user->program_type ?? 'gambar') }}</div>
+          </div>
+          <div>
             <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Tahun Ajaran</div>
             <div class="mt-1 font-extrabold text-slate-900">{{ $user->academic_year ?? '-' }}</div>
           </div>

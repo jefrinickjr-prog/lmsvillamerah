@@ -80,10 +80,15 @@ class StudentPageController extends Controller
 
         $studentClass = Auth::user()?->student_class;
         $studentClassKeys = User::studentClassLookupKeys($studentClass);
+        $programType = User::normalizeProgramType(Auth::user()?->program_type);
         $submissions = Submission::where('student_id', Auth::id())->get();
         $attendances = Attendance::where('student_id', Auth::id())->get();
-        $tasksCount = Task::whereHas('material.classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))->count();
-        $materialsCount = Material::whereHas('classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))->count();
+        $tasksCount = Task::whereHas('material', fn ($query) => $query->where('program_type', $programType))
+            ->whereHas('material.classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))
+            ->count();
+        $materialsCount = Material::where('program_type', $programType)
+            ->whereHas('classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))
+            ->count();
         $submittedCount = $submissions->count();
         $averageScore = $submissions->whereNotNull('score')->avg('score');
         $attendanceRate = $attendances->count() > 0
@@ -117,7 +122,8 @@ class StudentPageController extends Controller
             foreach ($studentClassKeys as $studentClassKey) {
                 $query->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
             }
-        })->where(function ($query) use ($branchKeys) {
+        })->where('program_type', User::normalizeProgramType($student->program_type))
+        ->where(function ($query) use ($branchKeys) {
             foreach ($branchKeys as $branchKey) {
                 $query->orWhereRaw('LOWER(TRIM(branch)) = ?', [$branchKey]);
             }

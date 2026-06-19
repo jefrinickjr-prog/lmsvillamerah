@@ -49,6 +49,7 @@
             <i class="fa-solid fa-circle-play"></i>
           </div>
           <h4 class="mt-5 font-black text-slate-950">{{ $material->title }}</h4>
+          <div class="mt-2 inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">{{ \App\Models\User::programTypeLabel($material->program_type ?? 'gambar') }}</div>
           <p class="mt-2 text-sm leading-6 text-slate-500">{{ \Illuminate\Support\Str::limit($material->content, 90) }}</p>
         </div>
       @empty

@@ -7,13 +7,20 @@ use App\Models\Classroom;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class MaterialController extends Controller
 {
     public function index()
     {
+        $programTypes = User::programTypeOptions();
+        $selectedProgramType = Auth::user()?->role === 'student'
+            ? User::normalizeProgramType(Auth::user()?->program_type)
+            : User::normalizeProgramType(request('program_type', 'gambar'));
+
         $materials = Material::with('classroom')
+            ->where('program_type', $selectedProgramType)
             ->when(Auth::user()?->role === 'student', function ($query) {
                 $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
 
@@ -33,7 +40,7 @@ class MaterialController extends Controller
             ->latest()
             ->get();
 
-        return view('materials.index', compact('materials'));
+        return view('materials.index', compact('materials', 'programTypes', 'selectedProgramType'));
     }
 
     public function create()
@@ -41,8 +48,9 @@ class MaterialController extends Controller
         abort_unless($this->canManageMaterials(), 403);
 
         $classrooms = $this->availableClassrooms();
+        $programTypes = User::programTypeOptions();
 
-        return view('materials.create', compact('classrooms'));
+        return view('materials.create', compact('classrooms', 'programTypes'));
     }
 
     public function store(Request $request)
@@ -61,8 +69,9 @@ class MaterialController extends Controller
         abort_unless($this->canManageMaterial($material), 403);
 
         $classrooms = $this->availableClassrooms();
+        $programTypes = User::programTypeOptions();
 
-        return view('materials.edit', compact('material', 'classrooms'));
+        return view('materials.edit', compact('material', 'classrooms', 'programTypes'));
     }
 
     public function update(Request $request, Material $material)
@@ -117,13 +126,23 @@ class MaterialController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
+            'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
             'classroom_id' => ['required', 'integer', 'exists:classrooms,id'],
             'youtube_embed_url' => ['required', 'string', 'max:2048'],
         ]);
+        $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
 
-        if (! $this->availableClassrooms()->contains('id', (int) $data['classroom_id'])) {
+        $classroom = $this->availableClassrooms()->firstWhere('id', (int) $data['classroom_id']);
+
+        if (! $classroom) {
             throw ValidationException::withMessages([
                 'classroom_id' => 'Pilih kelas yang tersedia untuk akun Anda.',
+            ]);
+        }
+
+        if (User::normalizeProgramType($classroom->program_type) !== $data['program_type']) {
+            throw ValidationException::withMessages([
+                'classroom_id' => 'Kelas harus berada di grup program yang sama dengan video.',
             ]);
         }
 

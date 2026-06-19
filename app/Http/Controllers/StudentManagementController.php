@@ -14,6 +14,7 @@ class StudentManagementController extends Controller
     {
         abort_unless($this->canManageStudents(), 403);
 
+        $programTypes = User::programTypeOptions();
         $studentClasses = $this->manageableStudentClasses();
         $branches = $this->manageableBranches();
 
@@ -28,44 +29,52 @@ class StudentManagementController extends Controller
                         ->orWhere('student_code', 'like', '%'.$search.'%');
                 });
             })
+            ->when($request->filled('program_type'), fn ($query) => $query->where('program_type', $request->program_type))
             ->when($request->filled('student_class'), fn ($query) => $query->where('student_class', $request->student_class))
             ->when($request->filled('branch'), fn ($query) => $query->where('branch', $request->branch))
+            ->orderBy('program_type')
             ->orderBy('student_class')
             ->orderBy('branch')
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();
 
-        return view('students.index', compact('students', 'studentClasses', 'branches'));
+        return view('students.index', compact('students', 'programTypes', 'studentClasses', 'branches'));
     }
 
     public function edit(User $student)
     {
         abort_unless($this->canManageStudent($student), 403);
 
-        $studentClasses = $this->manageableStudentClasses();
+        $programTypes = User::programTypeOptions();
+        $studentClassesByProgram = User::STUDENT_CLASSES;
         $branches = $this->manageableBranches();
 
-        return view('students.edit', compact('student', 'studentClasses', 'branches'));
+        return view('students.edit', compact('student', 'programTypes', 'studentClassesByProgram', 'branches'));
     }
 
     public function update(Request $request, User $student)
     {
         abort_unless($this->canManageStudent($student), 403);
 
-        $studentClasses = $this->manageableStudentClasses();
         $branches = $this->manageableBranches();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($student->id)],
-            'student_class' => ['required', 'string', Rule::in($studentClasses)],
+            'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
+            'student_class' => ['required', 'string'],
             'branch' => ['required', 'string', Rule::in($branches)],
             'academic_year' => ['required', 'string', 'regex:/^\d{4}-\d{4}$/'],
             'password' => ['nullable', 'confirmed', 'min:6'],
         ]);
+        $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
+        validator($data, [
+            'student_class' => [Rule::in(User::studentClassOptions($data['program_type']))],
+        ])->validate();
 
         $identityChanged = $student->academic_year !== $data['academic_year']
+            || $student->program_type !== $data['program_type']
             || $student->branch !== $data['branch']
             || $student->student_class !== $data['student_class']
             || ! $student->student_code;
@@ -73,6 +82,7 @@ class StudentManagementController extends Controller
         $student->fill([
             'name' => $data['name'],
             'email' => $data['email'],
+            'program_type' => $data['program_type'],
             'student_class' => $data['student_class'],
             'branch' => $data['branch'],
             'academic_year' => $data['academic_year'],
@@ -120,6 +130,7 @@ class StudentManagementController extends Controller
     {
         $sequence = User::where('role', 'student')
             ->where('academic_year', $data['academic_year'])
+            ->where('program_type', $data['program_type'])
             ->where('branch', $data['branch'])
             ->where('student_class', $data['student_class'])
             ->whereKeyNot($student->id)

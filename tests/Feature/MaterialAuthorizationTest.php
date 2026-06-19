@@ -133,6 +133,63 @@ class MaterialAuthorizationTest extends TestCase
             ->assertSee($material->title);
     }
 
+    public function test_student_only_sees_video_learning_for_their_program_group(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $gambarStudent = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'gambar',
+            'student_class' => 'SR Gold',
+            'branch' => 'Bandung',
+        ]);
+        $skolastikStudent = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'skolastik',
+            'student_class' => 'Skolastik Dasar',
+            'branch' => 'Bandung',
+        ]);
+        $gambarClassroom = Classroom::create([
+            'program_type' => 'gambar',
+            'title' => 'SR Gold',
+            'branch' => 'Bandung',
+            'description' => null,
+            'teacher_id' => $teacher->id,
+        ]);
+        $skolastikClassroom = Classroom::create([
+            'program_type' => 'skolastik',
+            'title' => 'Skolastik Dasar',
+            'branch' => 'Bandung',
+            'description' => null,
+            'teacher_id' => $teacher->id,
+        ]);
+        $gambarMaterial = Material::create([
+            'classroom_id' => $gambarClassroom->id,
+            'program_type' => 'gambar',
+            'title' => 'Perspektif Gambar',
+            'content' => null,
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
+        $skolastikMaterial = Material::create([
+            'classroom_id' => $skolastikClassroom->id,
+            'program_type' => 'skolastik',
+            'title' => 'Logika Skolastik',
+            'content' => null,
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
+
+        $this->actingAs($gambarStudent)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertSee($gambarMaterial->title)
+            ->assertDontSee($skolastikMaterial->title);
+
+        $this->actingAs($skolastikStudent)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertSee($skolastikMaterial->title)
+            ->assertDontSee($gambarMaterial->title);
+    }
+
     public function test_student_class_filter_handles_old_silver_typo(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);

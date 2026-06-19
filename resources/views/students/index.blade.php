@@ -16,10 +16,19 @@
   </div>
 
   <form method="GET" action="{{ route('students.index') }}" class="mb-5 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
-    <div class="grid gap-3 md:grid-cols-4">
+    <div class="grid gap-3 md:grid-cols-5">
       <div class="md:col-span-2">
         <label class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">Cari</label>
         <input name="search" value="{{ request('search') }}" placeholder="Nama, email, atau kode siswa" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+      </div>
+      <div>
+        <label class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">Program</label>
+        <select name="program_type" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+          <option value="">Semua program</option>
+          @foreach($programTypes as $value => $label)
+            <option value="{{ $value }}" @selected(request('program_type') === $value)>{{ $label }}</option>
+          @endforeach
+        </select>
       </div>
       <div>
         <label class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">Kelas</label>
@@ -58,6 +67,7 @@
           <tr class="text-left text-xs font-black uppercase tracking-wider text-slate-400">
             <th class="px-5 py-4">Kode</th>
             <th class="px-5 py-4">Siswa</th>
+            <th class="px-5 py-4">Program</th>
             <th class="px-5 py-4">Kelas</th>
             <th class="px-5 py-4">Cabang</th>
             <th class="px-5 py-4">Tahun Ajaran</th>
@@ -72,6 +82,7 @@
                 <div class="font-black text-slate-900">{{ $student->name }}</div>
                 <div class="mt-1 text-sm font-semibold text-slate-400">{{ $student->email }}</div>
               </td>
+              <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-violet-600">{{ \App\Models\User::programTypeLabel($student->program_type ?? 'gambar') }}</td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-slate-600">{{ $student->student_class ?? '-' }}</td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-slate-600">{{ $student->branch ?? '-' }}</td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-slate-600">{{ $student->academic_year ?? '-' }}</td>
@@ -84,7 +95,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="6" class="px-5 py-10 text-center">
+              <td colspan="7" class="px-5 py-10 text-center">
                 <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
                   <i class="fa-solid fa-users"></i>
                 </div>

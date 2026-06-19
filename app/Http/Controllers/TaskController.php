@@ -16,12 +16,14 @@ class TaskController extends Controller
         $tasks = Task::with('material.classroom')
             ->when(Auth::user()?->role === 'student', function ($query) {
                 $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
+                $programType = User::normalizeProgramType(Auth::user()?->program_type);
 
                 if ($studentClassKeys === []) {
                     $query->whereRaw('1 = 0');
                     return;
                 }
 
+                $query->whereHas('material', fn ($materialQuery) => $materialQuery->where('program_type', $programType));
                 $query->whereHas('material.classroom', function ($classroomQuery) use ($studentClassKeys) {
                     $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
                         foreach ($studentClassKeys as $studentClassKey) {

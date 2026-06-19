@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class RegisterController extends Controller
 {
@@ -14,11 +15,12 @@ class RegisterController extends Controller
     {
         abort_unless($this->canRegisterStudents(), 403);
 
-        $studentClasses = User::studentClassOptions();
+        $programTypes = User::programTypeOptions();
+        $studentClassesByProgram = User::STUDENT_CLASSES;
         $branches = User::branchOptions();
         $defaultAcademicYear = User::currentAcademicYear();
 
-        return view('auth.register', compact('studentClasses', 'branches', 'defaultAcademicYear'));
+        return view('auth.register', compact('programTypes', 'studentClassesByProgram', 'branches', 'defaultAcademicYear'));
     }
 
     public function register(Request $request)
@@ -29,13 +31,19 @@ class RegisterController extends Controller
             'name' => ['required','string','max:255'],
             'email' => ['required','email','max:255','unique:users,email'],
             'password' => ['required','confirmed','min:6'],
-            'student_class' => ['required', 'string', 'in:'.implode(',', User::studentClassOptions())],
+            'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
+            'student_class' => ['required', 'string'],
             'branch' => ['required', 'string', 'in:'.implode(',', User::branchOptions())],
             'academic_year' => ['required', 'string', 'regex:/^\d{4}-\d{4}$/'],
         ]);
+        $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
+        validator($data, [
+            'student_class' => [Rule::in(User::studentClassOptions($data['program_type']))],
+        ])->validate();
 
         $sequence = User::where('role', 'student')
             ->where('academic_year', $data['academic_year'])
+            ->where('program_type', $data['program_type'])
             ->where('branch', $data['branch'])
             ->where('student_class', $data['student_class'])
             ->count() + 1;
@@ -45,6 +53,7 @@ class RegisterController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => 'student',
+            'program_type' => $data['program_type'],
             'student_class' => $data['student_class'],
             'branch' => $data['branch'],
             'academic_year' => $data['academic_year'],

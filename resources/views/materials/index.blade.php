@@ -6,13 +6,14 @@
   @php
     $canManageMaterials = in_array(auth()->user()?->role, ['teacher', 'admin', 'super_admin'], true);
     $studentClass = auth()->user()?->role === 'student' ? auth()->user()?->student_class : null;
+    $selectedProgramLabel = \App\Models\User::programTypeLabel($selectedProgramType ?? auth()->user()?->program_type);
   @endphp
 
   <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
     <div>
       <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Video Pembelajaran</p>
-      <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Video Pembelajaran</h2>
-      <p class="mt-2 text-slate-500">Akses video pembelajaran menggambar sesuai kelas program.</p>
+      <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Video Pembelajaran {{ $selectedProgramLabel }}</h2>
+      <p class="mt-2 text-slate-500">Akses video pembelajaran sesuai grup program dan kelas siswa.</p>
       @if($studentClass)
         <p class="mt-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-black text-indigo-700">{{ $studentClass }}</p>
       @endif
@@ -23,6 +24,21 @@
         Tambah Video
       </a>
     @endif
+  </div>
+
+  <div class="mb-6 flex flex-wrap gap-2">
+    @foreach($programTypes as $value => $label)
+      @php($isActive = ($selectedProgramType ?? 'gambar') === $value)
+      @if($canManageMaterials)
+        <a href="{{ route('materials.index', ['program_type' => $value]) }}" class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-black {{ $isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' }}">
+          Video {{ $label }}
+        </a>
+      @elseif($isActive)
+        <span class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-indigo-100">
+          Video {{ $label }}
+        </span>
+      @endif
+    @endforeach
   </div>
 
   <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -41,6 +57,7 @@
         <div class="mt-5 flex flex-wrap items-center gap-2">
           <h3 class="text-lg font-black text-slate-950">{{ $material->title }}</h3>
           <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $material->classroom->title ?? 'Kelas' }}</span>
+          <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">{{ \App\Models\User::programTypeLabel($material->program_type ?? 'gambar') }}</span>
         </div>
         <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ \Illuminate\Support\Str::limit($material->content, 120) }}</p>
         @if($material->youtube_embed_url)

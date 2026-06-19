@@ -22,6 +22,16 @@
 
       <div class="space-y-5">
         <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Grup Video Pembelajaran</label>
+          <select name="program_type" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
+            @foreach($programTypes as $value => $label)
+              <option value="{{ $value }}" @selected(old('program_type', $material->program_type ?? 'gambar') === $value)>Video Pembelajaran {{ $label }}</option>
+            @endforeach
+          </select>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Pastikan grup video sama dengan grup kelas program.</p>
+        </div>
+
+        <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Judul Video</label>
           <input name="title" value="{{ old('title', $material->title) }}" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
         </div>
@@ -42,7 +52,7 @@
           <select name="classroom_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
             <option value="">Pilih kelas program</option>
             @foreach($classrooms as $classroom)
-              <option value="{{ $classroom->id }}" @selected(old('classroom_id', $material->classroom_id) == $classroom->id)>{{ $classroom->title }} - {{ $classroom->teacher->name ?? 'Pengajar' }}</option>
+              <option value="{{ $classroom->id }}" @selected(old('classroom_id', $material->classroom_id) == $classroom->id)>{{ \App\Models\User::programTypeLabel($classroom->program_type ?? 'gambar') }} - {{ $classroom->title }} - {{ $classroom->teacher->name ?? 'Pengajar' }}</option>
             @endforeach
           </select>
         </div>

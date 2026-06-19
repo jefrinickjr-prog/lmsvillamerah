@@ -6,6 +6,7 @@ use App\Models\Classroom;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ClassroomController extends Controller
 {
@@ -28,10 +29,11 @@ class ClassroomController extends Controller
         $teachers = User::whereIn('role', ['teacher', 'admin', 'super_admin'])
             ->orderBy('name')
             ->get();
-        $studentClasses = User::studentClassOptions();
+        $programTypes = User::programTypeOptions();
+        $studentClassesByProgram = User::STUDENT_CLASSES;
         $branches = User::branchOptions();
 
-        return view('classrooms.create', compact('teachers', 'studentClasses', 'branches'));
+        return view('classrooms.create', compact('teachers', 'programTypes', 'studentClassesByProgram', 'branches'));
     }
 
     public function store(Request $request)
@@ -52,10 +54,11 @@ class ClassroomController extends Controller
         $teachers = User::whereIn('role', ['teacher', 'admin', 'super_admin'])
             ->orderBy('name')
             ->get();
-        $studentClasses = User::studentClassOptions();
+        $programTypes = User::programTypeOptions();
+        $studentClassesByProgram = User::STUDENT_CLASSES;
         $branches = User::branchOptions();
 
-        return view('classrooms.edit', compact('classroom', 'teachers', 'studentClasses', 'branches'));
+        return view('classrooms.edit', compact('classroom', 'teachers', 'programTypes', 'studentClassesByProgram', 'branches'));
     }
 
     public function update(Request $request, Classroom $classroom)
@@ -63,6 +66,7 @@ class ClassroomController extends Controller
         abort_unless($this->canManageClassroom($classroom), 403);
 
         $classroom->update($this->validatedClassroomData($request, $classroom));
+        $classroom->materials()->update(['program_type' => $classroom->program_type]);
 
         return redirect()->route('classrooms.index')->with('success', 'Kelas berhasil diperbarui');
     }
@@ -97,7 +101,8 @@ class ClassroomController extends Controller
     private function validatedClassroomData(Request $request, ?Classroom $classroom = null): array
     {
         $rules = [
-            'title' => ['required', 'string', 'in:'.implode(',', User::studentClassOptions())],
+            'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
+            'title' => ['required', 'string'],
             'branch' => ['required', 'string', 'in:'.implode(',', User::branchOptions())],
             'description' => ['nullable', 'string'],
         ];
@@ -107,6 +112,10 @@ class ClassroomController extends Controller
         }
 
         $data = $request->validate($rules);
+        $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
+        validator($data, [
+            'title' => [Rule::in(User::studentClassOptions($data['program_type']))],
+        ])->validate();
         $data['teacher_id'] = $data['teacher_id'] ?? $classroom?->teacher_id ?? Auth::id();
 
         return $data;

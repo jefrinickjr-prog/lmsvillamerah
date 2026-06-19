@@ -9,7 +9,7 @@ class Material extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['classroom_id', 'title', 'content', 'youtube_embed_url'];
+    protected $fillable = ['classroom_id', 'program_type', 'title', 'content', 'youtube_embed_url'];
 
     public function classroom()
     {

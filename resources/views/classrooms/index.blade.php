@@ -22,7 +22,10 @@
           <i class="fa-solid fa-chalkboard-user"></i>
         </div>
         <h3 class="mt-5 text-lg font-black text-slate-950">{{ $classroom->title }}</h3>
-        <div class="mt-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-indigo-700">{{ $classroom->branch ?? 'Cabang belum diisi' }}</div>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <span class="inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-700">{{ \App\Models\User::programTypeLabel($classroom->program_type ?? 'gambar') }}</span>
+          <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-indigo-700">{{ $classroom->branch ?? 'Cabang belum diisi' }}</span>
+        </div>
         <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ $classroom->description ?: 'Tidak ada deskripsi.' }}</p>
         <div class="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
           Pengajar: {{ $classroom->teacher->name ?? '-' }}

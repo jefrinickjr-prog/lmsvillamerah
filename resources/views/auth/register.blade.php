@@ -28,11 +28,24 @@
         </div>
 
         <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Grup Program</label>
+          <select name="program_type" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
+            @foreach($programTypes as $value => $label)
+              <option value="{{ $value }}" @selected(old('program_type', 'gambar') === $value)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Kelas Program</label>
           <select name="student_class" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
             <option value="">Pilih kelas program</option>
-            @foreach($studentClasses as $studentClass)
-              <option value="{{ $studentClass }}" @selected(old('student_class') === $studentClass)>{{ $studentClass }}</option>
+            @foreach($studentClassesByProgram as $programType => $classes)
+              <optgroup label="{{ $programTypes[$programType] ?? ucfirst($programType) }}">
+                @foreach($classes as $studentClass)
+                  <option value="{{ $studentClass }}" @selected(old('student_class') === $studentClass)>{{ $studentClass }}</option>
+                @endforeach
+              </optgroup>
             @endforeach
           </select>
         </div>

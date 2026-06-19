@@ -124,6 +124,7 @@
               <div class="mt-2 font-extrabold text-slate-900">{{ $roleLabel }}</div>
               @if(($user->role ?? null) === 'student' && $user->student_class)
                 <div class="mt-1 text-sm font-bold text-indigo-600">{{ $user->student_class }}</div>
+                <div class="mt-1 text-xs font-black uppercase tracking-wider text-violet-500">{{ \App\Models\User::programTypeLabel($user->program_type ?? 'gambar') }}</div>
                 <div class="mt-1 text-xs font-bold text-slate-500">{{ $user->branch ?? 'Cabang belum diisi' }} @if($user->academic_year) · {{ $user->academic_year }} @endif</div>
                 @if($user->student_code)
                   <div class="mt-2 rounded-xl bg-white/70 px-3 py-2 text-xs font-black text-slate-700">{{ $user->student_code }}</div>
