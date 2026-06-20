@@ -88,7 +88,9 @@
       </article>
       @endforeach
     </div>
-  @else
+  @endif
+
+  @if($materials->isEmpty())
     <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
       <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
         <i class="fa-regular fa-folder-open"></i>
