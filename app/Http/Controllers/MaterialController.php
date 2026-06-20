@@ -7,6 +7,7 @@ use App\Models\Classroom;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -19,8 +20,10 @@ class MaterialController extends Controller
             ? User::normalizeProgramType(Auth::user()?->program_type)
             : User::normalizeProgramType(request('program_type', 'gambar'));
 
+        $hasProgramTypeColumn = Schema::hasColumn('materials', 'program_type');
+
         $materials = Material::with('classroom')
-            ->where('program_type', $selectedProgramType)
+            ->when($hasProgramTypeColumn, fn ($query) => $query->where('program_type', $selectedProgramType))
             ->when(Auth::user()?->role === 'student', function ($query) {
                 $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
 

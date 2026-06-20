@@ -41,8 +41,9 @@
     @endforeach
   </div>
 
-  <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-    @forelse($materials as $material)
+  @if($materials->isNotEmpty())
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      @foreach($materials as $material)
       @php
         $canManageThisMaterial = in_array(auth()->user()?->role, ['admin', 'super_admin'], true)
           || (auth()->user()?->role === 'teacher' && $material->classroom?->teacher_id === auth()->id());
@@ -85,20 +86,21 @@
           @endif
         </div>
       </article>
-    @empty
-      <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center md:col-span-2 xl:col-span-3">
-        <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-          <i class="fa-regular fa-folder-open"></i>
-        </div>
-        <h3 class="mt-4 font-black text-slate-900">Belum ada video pembelajaran</h3>
-        <p class="mt-2 text-sm text-slate-500">
-          @if(auth()->user()?->role === 'student' && ! $studentClass)
-            Akun siswa ini belum memiliki kelas program. Minta admin atau pengajar mengisi kelas siswa terlebih dahulu.
-          @else
-            Video yang dibuat untuk kelas ini akan tampil di halaman ini.
-          @endif
-        </p>
+      @endforeach
+    </div>
+  @else
+    <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+      <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
+        <i class="fa-regular fa-folder-open"></i>
       </div>
-    @endforelse
-  </div>
+      <h3 class="mt-4 font-black text-slate-900">Belum ada video pembelajaran</h3>
+      <p class="mt-2 text-sm text-slate-500">
+        @if(auth()->user()?->role === 'student' && ! $studentClass)
+          Akun siswa ini belum memiliki kelas program. Minta admin atau pengajar mengisi kelas siswa terlebih dahulu.
+        @else
+          Video yang dibuat untuk kelas ini akan tampil di halaman ini.
+        @endif
+      </p>
+    </div>
+  @endif
 @endsection
