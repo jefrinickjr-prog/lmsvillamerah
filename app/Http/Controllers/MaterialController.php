@@ -15,12 +15,9 @@ class MaterialController extends Controller
 {
     public function index()
     {
-        $programTypes = User::programTypeOptions();
-        $selectedProgramType = Auth::user()?->role === 'student'
-            ? User::normalizeProgramType(Auth::user()?->program_type)
-            : User::normalizeProgramType(request('program_type', 'gambar'));
-
+        $programTypes = $this->videoGroups();
         $hasProgramTypeColumn = Schema::hasColumn('materials', 'program_type');
+        $selectedProgramType = $this->selectedVideoGroup($programTypes, $hasProgramTypeColumn);
 
         $materials = Material::with('classroom')
             ->when($hasProgramTypeColumn, fn ($query) => $query->where('program_type', $selectedProgramType))
@@ -28,7 +25,6 @@ class MaterialController extends Controller
                 $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
 
                 if ($studentClassKeys === []) {
-                    $query->whereRaw('1 = 0');
                     return;
                 }
 
@@ -51,7 +47,7 @@ class MaterialController extends Controller
         abort_unless($this->canManageMaterials(), 403);
 
         $classrooms = $this->availableClassrooms();
-        $programTypes = User::programTypeOptions();
+        $programTypes = $this->videoGroups();
 
         return view('materials.create', compact('classrooms', 'programTypes'));
     }
@@ -72,7 +68,7 @@ class MaterialController extends Controller
         abort_unless($this->canManageMaterial($material), 403);
 
         $classrooms = $this->availableClassrooms();
-        $programTypes = User::programTypeOptions();
+        $programTypes = $this->videoGroups();
 
         return view('materials.edit', compact('material', 'classrooms', 'programTypes'));
     }
@@ -129,23 +125,19 @@ class MaterialController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
-            'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
+            'program_type' => ['nullable', 'string', Rule::in(array_keys($this->videoGroups()))],
             'classroom_id' => ['required', 'integer', 'exists:classrooms,id'],
             'youtube_embed_url' => ['required', 'string', 'max:2048'],
         ]);
-        $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
+        $data['program_type'] = array_key_exists($data['program_type'] ?? '', $this->videoGroups())
+            ? $data['program_type']
+            : 'gambar';
 
         $classroom = $this->availableClassrooms()->firstWhere('id', (int) $data['classroom_id']);
 
         if (! $classroom) {
             throw ValidationException::withMessages([
                 'classroom_id' => 'Pilih kelas yang tersedia untuk akun Anda.',
-            ]);
-        }
-
-        if (User::normalizeProgramType($classroom->program_type) !== $data['program_type']) {
-            throw ValidationException::withMessages([
-                'classroom_id' => 'Kelas harus berada di grup program yang sama dengan video.',
             ]);
         }
 
@@ -160,6 +152,29 @@ class MaterialController extends Controller
         $data['youtube_embed_url'] = $youtubeEmbedUrl;
 
         return $data;
+    }
+
+    private function videoGroups(): array
+    {
+        return [
+            'gambar' => 'Video Tutorial Gambar',
+            'skolastik' => 'Video Pengerjaan Skolastik',
+        ];
+    }
+
+    private function selectedVideoGroup(array $programTypes, bool $hasProgramTypeColumn): string
+    {
+        $requested = request('program_type', 'gambar');
+
+        if (Auth::user()?->role === 'student' && Schema::hasColumn('users', 'program_type')) {
+            $requested = Auth::user()?->program_type ?: $requested;
+        }
+
+        if (! $hasProgramTypeColumn) {
+            return 'gambar';
+        }
+
+        return array_key_exists($requested, $programTypes) ? $requested : 'gambar';
     }
 
     private function normalizeYoutubeEmbedUrl(?string $url): ?string

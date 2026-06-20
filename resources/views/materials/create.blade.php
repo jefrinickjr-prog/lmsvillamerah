@@ -23,10 +23,10 @@
           <label class="mb-2 block text-sm font-bold text-slate-700">Grup Video Pembelajaran</label>
           <select name="program_type" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
             @foreach($programTypes as $value => $label)
-              <option value="{{ $value }}" @selected(old('program_type', 'gambar') === $value)>Video Pembelajaran {{ $label }}</option>
+              <option value="{{ $value }}" @selected(old('program_type', 'gambar') === $value)>{{ $label }}</option>
             @endforeach
           </select>
-          <p class="mt-2 text-xs font-semibold text-slate-400">Video gambar hanya tampil untuk siswa program gambar, begitu juga video skolastik.</p>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Gunakan grup ini agar tutorial gambar dan pengerjaan skolastik terpisah.</p>
         </div>
 
         <div>
@@ -48,7 +48,7 @@
             <select name="classroom_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
               <option value="">Pilih kelas program</option>
               @foreach($classrooms as $classroom)
-                <option value="{{ $classroom->id }}" @selected(old('classroom_id') == $classroom->id)>{{ \App\Models\User::programTypeLabel($classroom->program_type ?? 'gambar') }} - {{ $classroom->title }} - {{ $classroom->teacher->name ?? 'Pengajar' }}</option>
+                <option value="{{ $classroom->id }}" @selected(old('classroom_id') == $classroom->id)>{{ $classroom->title }} - {{ $classroom->teacher->name ?? 'Pengajar' }}</option>
               @endforeach
             </select>
           @else
