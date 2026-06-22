@@ -84,10 +84,26 @@ class StudentPageController extends Controller
         $submissions = Submission::where('student_id', Auth::id())->get();
         $attendances = Attendance::where('student_id', Auth::id())->get();
         $tasksCount = Task::whereHas('material', fn ($query) => $query->whereIn('program_type', $videoAccesses))
-            ->whereHas('material.classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))
+            ->where(function ($query) use ($studentClassKeys) {
+                $query
+                    ->whereHas('material.classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys))
+                    ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
+                        $fallbackQuery
+                            ->whereDoesntHave('material.classrooms')
+                            ->whereHas('material.classroom', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
+                    });
+            })
             ->count();
         $materialsCount = Material::whereIn('program_type', $videoAccesses)
-            ->whereHas('classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))
+            ->where(function ($query) use ($studentClassKeys) {
+                $query
+                    ->whereHas('classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys))
+                    ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
+                        $fallbackQuery
+                            ->doesntHave('classrooms')
+                            ->whereHas('classroom', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
+                    });
+            })
             ->count();
         $submittedCount = $submissions->count();
         $averageScore = $submissions->whereNotNull('score')->avg('score');

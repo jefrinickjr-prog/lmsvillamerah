@@ -16,6 +16,16 @@ class Material extends Model
         return $this->belongsTo(Classroom::class);
     }
 
+    public function classrooms()
+    {
+        return $this->belongsToMany(Classroom::class)->withTimestamps();
+    }
+
+    public function accessibleClassrooms()
+    {
+        return $this->classrooms->isNotEmpty() ? $this->classrooms : collect([$this->classroom])->filter();
+    }
+
     public function tasks()
     {
         return $this->hasMany(Task::class);

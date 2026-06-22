@@ -30,7 +30,12 @@
             <select name="material_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
               <option value="">Pilih video pembelajaran</option>
               @foreach($videos as $video)
-                <option value="{{ $video->id }}" @selected(old('material_id') == $video->id)>{{ \App\Models\User::programTypeLabel($video->program_type ?? 'gambar') }} - {{ $video->title }} - {{ $video->classroom->title ?? 'Kelas' }}</option>
+                @php
+                  $videoClassrooms = $video->classrooms->isNotEmpty()
+                    ? $video->classrooms->pluck('title')->implode(', ')
+                    : ($video->classroom->title ?? 'Kelas');
+                @endphp
+                <option value="{{ $video->id }}" @selected(old('material_id') == $video->id)>{{ \App\Models\User::programTypeLabel($video->program_type ?? 'gambar') }} - {{ $video->title }} - {{ $videoClassrooms }}</option>
               @endforeach
             </select>
           @else

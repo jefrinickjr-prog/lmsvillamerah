@@ -43,6 +43,21 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         $this->line('Added materials.program_type');
     }
 
+    if (
+        Schema::hasTable('classrooms')
+        && Schema::hasTable('materials')
+        && ! Schema::hasTable('classroom_material')
+    ) {
+        Schema::create('classroom_material', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('classroom_id')->constrained('classrooms')->cascadeOnDelete();
+            $table->foreignId('material_id')->constrained('materials')->cascadeOnDelete();
+            $table->timestamps();
+            $table->unique(['classroom_id', 'material_id']);
+        });
+        $this->line('Added classroom_material pivot table');
+    }
+
     if (Schema::hasTable('users') && Schema::hasColumn('users', 'program_type')) {
         DB::table('users')->whereNull('program_type')->orWhere('program_type', '')->update(['program_type' => 'gambar']);
     }
@@ -86,6 +101,29 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
             ->update(['materials.program_type' => DB::raw('classrooms.program_type')]);
 
         DB::table('materials')->whereNull('program_type')->orWhere('program_type', '')->update(['program_type' => 'gambar']);
+    }
+
+    if (
+        Schema::hasTable('classroom_material')
+        && Schema::hasTable('materials')
+        && Schema::hasColumn('materials', 'classroom_id')
+    ) {
+        DB::table('materials')
+            ->whereNotNull('classroom_id')
+            ->orderBy('id')
+            ->get(['id', 'classroom_id'])
+            ->each(function ($material) {
+                DB::table('classroom_material')->updateOrInsert(
+                    [
+                        'classroom_id' => $material->classroom_id,
+                        'material_id' => $material->id,
+                    ],
+                    [
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            });
     }
 
     if ($this->option('seed-defaults') && Schema::hasTable('users')) {

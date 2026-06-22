@@ -20,8 +20,9 @@ class MaterialController extends Controller
         $visibleProgramTypes = $this->visibleVideoGroups($programTypes);
         $selectedProgramType = $this->selectedVideoGroup($visibleProgramTypes, $hasProgramTypeColumn);
 
-        $materials = Material::with('classroom')
+        $materials = Material::with(['classroom', 'classrooms'])
             ->when($hasProgramTypeColumn, fn ($query) => $query->where('program_type', $selectedProgramType))
+            ->when(Auth::user()?->role === 'student', fn ($query) => $this->applyStudentClassroomAccess($query))
             ->latest()
             ->get();
 
@@ -44,7 +45,7 @@ class MaterialController extends Controller
 
         $data = $this->validatedVideoData($request);
 
-        Material::create($data);
+        $this->saveVideoData($data);
 
         return redirect()->route('materials.index')->with('success', 'Video pembelajaran berhasil dibuat');
     }
@@ -63,7 +64,7 @@ class MaterialController extends Controller
     {
         abort_unless($this->canManageMaterial($material), 403);
 
-        $material->update($this->validatedVideoData($request));
+        $this->saveVideoData($this->validatedVideoData($request), $material);
 
         return redirect()->route('materials.index')->with('success', 'Video pembelajaran berhasil diperbarui');
     }
@@ -92,7 +93,10 @@ class MaterialController extends Controller
             return true;
         }
 
-        return $material->classroom?->teacher_id === Auth::id();
+        return $material->classrooms()
+            ->where('teacher_id', Auth::id())
+            ->exists()
+            || $material->classroom?->teacher_id === Auth::id();
     }
 
     private function availableClassrooms()
@@ -108,24 +112,34 @@ class MaterialController extends Controller
 
     private function validatedVideoData(Request $request): array
     {
+        if (! $request->has('classroom_ids') && $request->filled('classroom_id')) {
+            $request->merge(['classroom_ids' => [$request->input('classroom_id')]]);
+        }
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
             'program_type' => ['nullable', 'string', Rule::in(array_keys($this->videoGroups()))],
-            'classroom_id' => ['required', 'integer', 'exists:classrooms,id'],
+            'classroom_ids' => ['required', 'array', 'min:1'],
+            'classroom_ids.*' => ['integer', 'exists:classrooms,id'],
             'youtube_embed_url' => ['required', 'string', 'max:2048'],
         ]);
         $data['program_type'] = array_key_exists($data['program_type'] ?? '', $this->videoGroups())
             ? $data['program_type']
             : 'gambar';
 
-        $classroom = $this->availableClassrooms()->firstWhere('id', (int) $data['classroom_id']);
+        $availableClassroomIds = $this->availableClassrooms()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $classroomIds = array_values(array_unique(array_map('intval', $data['classroom_ids'] ?? [])));
+        $invalidClassroomIds = array_diff($classroomIds, $availableClassroomIds);
 
-        if (! $classroom) {
+        if ($classroomIds === [] || $invalidClassroomIds !== []) {
             throw ValidationException::withMessages([
-                'classroom_id' => 'Pilih kelas yang tersedia untuk akun Anda.',
+                'classroom_ids' => 'Pilih kelas yang tersedia untuk akun Anda.',
             ]);
         }
+
+        $data['classroom_id'] = $classroomIds[0];
+        $data['classroom_ids'] = $classroomIds;
 
         $youtubeEmbedUrl = $this->normalizeYoutubeEmbedUrl($data['youtube_embed_url'] ?? null);
 
@@ -138,6 +152,22 @@ class MaterialController extends Controller
         $data['youtube_embed_url'] = $youtubeEmbedUrl;
 
         return $data;
+    }
+
+    private function saveVideoData(array $data, ?Material $material = null): Material
+    {
+        $classroomIds = $data['classroom_ids'];
+        unset($data['classroom_ids']);
+
+        if ($material) {
+            $material->update($data);
+        } else {
+            $material = Material::create($data);
+        }
+
+        $material->classrooms()->sync($classroomIds);
+
+        return $material;
     }
 
     private function videoGroups(): array
@@ -174,6 +204,35 @@ class MaterialController extends Controller
         $accesses = Auth::user()?->videoAccesses() ?? ['gambar'];
 
         return array_intersect_key($programTypes, array_flip($accesses)) ?: ['gambar' => $programTypes['gambar']];
+    }
+
+    private function applyStudentClassroomAccess($query): void
+    {
+        $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
+
+        if ($studentClassKeys === []) {
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $query->where(function ($accessQuery) use ($studentClassKeys) {
+            $accessQuery
+                ->whereHas('classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys))
+                ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
+                    $fallbackQuery
+                        ->doesntHave('classrooms')
+                        ->whereHas('classroom', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
+                });
+        });
+    }
+
+    private function classroomTitleQuery($query, array $studentClassKeys): void
+    {
+        $query->where(function ($titleQuery) use ($studentClassKeys) {
+            foreach ($studentClassKeys as $studentClassKey) {
+                $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
+            }
+        });
     }
 
     private function normalizeYoutubeEmbedUrl(?string $url): ?string

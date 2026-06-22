@@ -9,16 +9,30 @@
     $programType = \App\Models\User::normalizeProgramType(auth()->user()->program_type);
     $videoAccesses = auth()->user()->videoAccesses();
     $studentClassKeys = \App\Models\User::studentClassLookupKeys($studentClass);
-    $latestTasks = \App\Models\Task::with('material.classroom')
+    $latestTasks = \App\Models\Task::with(['material.classroom', 'material.classrooms'])
       ->whereHas('material', fn ($materialQuery) => $materialQuery->whereIn('program_type', $videoAccesses))
       ->when($studentClassKeys === [], fn ($query) => $query->whereRaw('1 = 0'))
       ->when($studentClassKeys !== [], function ($query) use ($studentClassKeys) {
-        $query->whereHas('material.classroom', function ($classroomQuery) use ($studentClassKeys) {
-          $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
-            foreach ($studentClassKeys as $studentClassKey) {
-              $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-            }
-          });
+        $query->where(function ($taskQuery) use ($studentClassKeys) {
+          $taskQuery
+            ->whereHas('material.classrooms', function ($classroomQuery) use ($studentClassKeys) {
+              $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
+                foreach ($studentClassKeys as $studentClassKey) {
+                  $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
+                }
+              });
+            })
+            ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
+              $fallbackQuery
+                ->whereDoesntHave('material.classrooms')
+                ->whereHas('material.classroom', function ($classroomQuery) use ($studentClassKeys) {
+                  $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
+                    foreach ($studentClassKeys as $studentClassKey) {
+                      $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
+                    }
+                  });
+                });
+            });
         });
       })
       ->latest()

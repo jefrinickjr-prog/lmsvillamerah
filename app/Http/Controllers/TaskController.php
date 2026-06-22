@@ -13,7 +13,7 @@ class TaskController extends Controller
 {
     public function index()
     {
-        $tasks = Task::with('material.classroom')
+        $tasks = Task::with(['material.classroom', 'material.classrooms'])
             ->when(Auth::user()?->role === 'student', function ($query) {
                 $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
                 $videoAccesses = Auth::user()?->videoAccesses() ?? [User::normalizeProgramType(Auth::user()?->program_type)];
@@ -24,12 +24,14 @@ class TaskController extends Controller
                 }
 
                 $query->whereHas('material', fn ($materialQuery) => $materialQuery->whereIn('program_type', $videoAccesses));
-                $query->whereHas('material.classroom', function ($classroomQuery) use ($studentClassKeys) {
-                    $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
-                        foreach ($studentClassKeys as $studentClassKey) {
-                            $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-                        }
-                    });
+                $query->where(function ($taskQuery) use ($studentClassKeys) {
+                    $taskQuery
+                        ->whereHas('material.classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys))
+                        ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
+                            $fallbackQuery
+                                ->whereDoesntHave('material.classrooms')
+                                ->whereHas('material.classroom', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
+                        });
                 });
             })
             ->latest()
@@ -74,12 +76,25 @@ class TaskController extends Controller
 
     private function availableVideos()
     {
-        $query = Material::with('classroom.teacher')->latest();
+        $query = Material::with(['classroom.teacher', 'classrooms.teacher'])->latest();
 
         if (Auth::user()?->role === 'teacher') {
-            $query->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->where('teacher_id', Auth::id()));
+            $query->where(function ($materialQuery) {
+                $materialQuery
+                    ->whereHas('classrooms', fn ($classroomQuery) => $classroomQuery->where('teacher_id', Auth::id()))
+                    ->orWhereHas('classroom', fn ($classroomQuery) => $classroomQuery->where('teacher_id', Auth::id()));
+            });
         }
 
         return $query->get();
+    }
+
+    private function classroomTitleQuery($query, array $studentClassKeys): void
+    {
+        $query->where(function ($titleQuery) use ($studentClassKeys) {
+            foreach ($studentClassKeys as $studentClassKey) {
+                $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
+            }
+        });
     }
 }

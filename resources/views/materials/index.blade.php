@@ -50,8 +50,14 @@
       <?php foreach ($materials as $material): ?>
         <?php
           $canManageThisMaterial = in_array(auth()->user()?->role, ['admin', 'super_admin'], true)
-            || (auth()->user()?->role === 'teacher' && $material->classroom?->teacher_id === auth()->id());
+            || (auth()->user()?->role === 'teacher' && (
+              $material->classrooms->contains('teacher_id', auth()->id())
+              || $material->classroom?->teacher_id === auth()->id()
+            ));
           $materialGroup = $programTypes[$material->program_type ?? 'gambar'] ?? ($programTypes['gambar'] ?? 'Video Tutorial Gambar');
+          $materialClassrooms = $material->classrooms->isNotEmpty()
+            ? $material->classrooms
+            : collect([$material->classroom])->filter();
         ?>
 
         <article class="min-w-0 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200 sm:p-6">
@@ -64,7 +70,9 @@
 
           <div class="mt-5 flex flex-wrap items-center gap-2">
             <h3 class="min-w-0 break-words text-lg font-black text-slate-950">{{ $material->title }}</h3>
-            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $material->classroom->title ?? 'Kelas' }}</span>
+            <?php foreach ($materialClassrooms as $classroom): ?>
+              <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $classroom->title ?? 'Kelas' }}</span>
+            <?php endforeach; ?>
             <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">{{ $materialGroup }}</span>
           </div>
 

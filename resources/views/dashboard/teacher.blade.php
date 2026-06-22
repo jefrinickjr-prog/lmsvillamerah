@@ -5,9 +5,18 @@
 @section('content')
   @php
     $classes = \App\Models\Classroom::where('teacher_id', auth()->id())->count();
-    $videos = \App\Models\Material::whereHas('classroom', function($query) { $query->where('teacher_id', auth()->id()); })->count();
-    $tasks = \App\Models\Task::whereHas('material.classroom', function($query) { $query->where('teacher_id', auth()->id()); })->count();
-    $latestVideos = \App\Models\Material::whereHas('classroom', function($query) { $query->where('teacher_id', auth()->id()); })->latest()->limit(6)->get();
+    $videos = \App\Models\Material::where(function($query) {
+      $query->whereHas('classrooms', function($classroomQuery) { $classroomQuery->where('teacher_id', auth()->id()); })
+        ->orWhereHas('classroom', function($classroomQuery) { $classroomQuery->where('teacher_id', auth()->id()); });
+    })->count();
+    $tasks = \App\Models\Task::where(function($query) {
+      $query->whereHas('material.classrooms', function($classroomQuery) { $classroomQuery->where('teacher_id', auth()->id()); })
+        ->orWhereHas('material.classroom', function($classroomQuery) { $classroomQuery->where('teacher_id', auth()->id()); });
+    })->count();
+    $latestVideos = \App\Models\Material::where(function($query) {
+      $query->whereHas('classrooms', function($classroomQuery) { $classroomQuery->where('teacher_id', auth()->id()); })
+        ->orWhereHas('classroom', function($classroomQuery) { $classroomQuery->where('teacher_id', auth()->id()); });
+    })->latest()->limit(6)->get();
   @endphp
 
   <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">

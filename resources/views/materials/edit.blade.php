@@ -48,13 +48,26 @@
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-bold text-slate-700">Kelas Program</label>
-          <select name="classroom_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
-            <option value="">Pilih kelas program</option>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Akses Kelas Program</label>
+          @php
+            $currentClassroomIds = $material->classrooms->pluck('id')->all();
+            if ($currentClassroomIds === [] && $material->classroom_id) {
+              $currentClassroomIds = [$material->classroom_id];
+            }
+            $selectedClassroomIds = array_map('intval', old('classroom_ids', old('classroom_id') ? [old('classroom_id')] : $currentClassroomIds));
+          @endphp
+          <div class="grid gap-3 sm:grid-cols-2">
             @foreach($classrooms as $classroom)
-              <option value="{{ $classroom->id }}" @selected(old('classroom_id', $material->classroom_id) == $classroom->id)>{{ $classroom->title }} - {{ $classroom->teacher->name ?? 'Pengajar' }}</option>
+              <label class="flex min-h-14 cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-700">
+                <input type="checkbox" name="classroom_ids[]" value="{{ $classroom->id }}" class="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600" @checked(in_array((int) $classroom->id, $selectedClassroomIds, true))>
+                <span>
+                  <span class="block">{{ $classroom->title }}</span>
+                  <span class="mt-1 block text-xs font-semibold text-slate-400">{{ $classroom->teacher->name ?? 'Pengajar' }}</span>
+                </span>
+              </label>
             @endforeach
-          </select>
+          </div>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Centang beberapa kelas agar satu video dapat ditonton banyak kelas tanpa upload ulang.</p>
         </div>
 
         <button class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700" type="submit">

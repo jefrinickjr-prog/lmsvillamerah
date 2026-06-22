@@ -103,7 +103,7 @@ class MaterialAuthorizationTest extends TestCase
         $this->actingAs($otherStudent)
             ->get(route('materials.index'))
             ->assertOk()
-            ->assertSee($material->title);
+            ->assertDontSee($material->title);
     }
 
     public function test_student_can_view_video_learning_for_their_class_from_any_branch(): void
@@ -131,6 +131,71 @@ class MaterialAuthorizationTest extends TestCase
             ->get(route('materials.index'))
             ->assertOk()
             ->assertSee($material->title);
+    }
+
+    public function test_video_learning_can_be_shared_to_multiple_classes(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $goldStudent = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'gambar',
+            'video_accesses' => ['gambar'],
+            'student_class' => 'SR Gold',
+            'branch' => 'Bandung',
+        ]);
+        $advanceStudent = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'gambar',
+            'video_accesses' => ['gambar'],
+            'student_class' => 'SR Advance',
+            'branch' => 'Bandung',
+        ]);
+        $silverStudent = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'gambar',
+            'video_accesses' => ['gambar'],
+            'student_class' => 'SR Silver',
+            'branch' => 'Bandung',
+        ]);
+        $goldClassroom = Classroom::create([
+            'program_type' => 'gambar',
+            'title' => 'SR Gold',
+            'branch' => 'Bandung',
+            'description' => null,
+            'teacher_id' => $admin->id,
+        ]);
+        $advanceClassroom = Classroom::create([
+            'program_type' => 'gambar',
+            'title' => 'SR Advance',
+            'branch' => 'Bandung',
+            'description' => null,
+            'teacher_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('materials.store'), [
+                'program_type' => 'gambar',
+                'classroom_ids' => [$goldClassroom->id, $advanceClassroom->id],
+                'title' => 'Pembahasan Garis',
+                'content' => null,
+                'youtube_embed_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            ])
+            ->assertRedirect(route('materials.index'));
+
+        $this->actingAs($goldStudent)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertSee('Pembahasan Garis');
+
+        $this->actingAs($advanceStudent)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertSee('Pembahasan Garis');
+
+        $this->actingAs($silverStudent)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertDontSee('Pembahasan Garis');
     }
 
     public function test_student_sees_video_learning_from_each_granted_access(): void
@@ -178,6 +243,13 @@ class MaterialAuthorizationTest extends TestCase
             'content' => null,
             'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
         ]);
+        $goldSkolastikMaterial = Material::create([
+            'classroom_id' => $gambarClassroom->id,
+            'program_type' => 'skolastik',
+            'title' => 'Pembahasan Skolastik Gold',
+            'content' => null,
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
 
         $this->actingAs($gambarStudent)
             ->get(route('materials.index'))
@@ -188,7 +260,8 @@ class MaterialAuthorizationTest extends TestCase
         $this->actingAs($gambarStudent)
             ->get(route('materials.index', ['program_type' => 'skolastik']))
             ->assertOk()
-            ->assertSee($skolastikMaterial->title)
+            ->assertSee($goldSkolastikMaterial->title)
+            ->assertDontSee($skolastikMaterial->title)
             ->assertDontSee($gambarMaterial->title);
 
         $this->actingAs($skolastikStudent)
