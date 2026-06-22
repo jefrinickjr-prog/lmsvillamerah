@@ -28,12 +28,65 @@ video {
     aspect-ratio: 16 / 9;
 }
 
+.sidebar-toggle-icon {
+    transition: transform 0.2s ease;
+}
+
 button,
 a,
 input,
 select,
 textarea {
     -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 1024px) {
+    #appSidebar,
+    #appShell,
+    .sidebar-label,
+    .sidebar-user-card {
+        transition: all 0.2s ease;
+    }
+
+    body.sidebar-collapsed #appSidebar {
+        width: 5rem;
+    }
+
+    body.sidebar-collapsed #appShell {
+        padding-left: 5rem;
+    }
+
+    body.sidebar-collapsed .sidebar-label,
+    body.sidebar-collapsed .sidebar-user-card {
+        display: none;
+    }
+
+    body.sidebar-collapsed .sidebar-brand {
+        justify-content: center;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    body.sidebar-collapsed .sidebar-nav {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    body.sidebar-collapsed .sidebar-link {
+        justify-content: center;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    body.sidebar-collapsed .sidebar-toggle {
+        bottom: 1rem;
+        left: 1rem;
+        position: absolute;
+    }
+
+    body.sidebar-collapsed .sidebar-toggle-icon {
+        transform: rotate(180deg);
+    }
 }
 
 @media (max-width: 640px) {

@@ -27,6 +27,55 @@
       img, iframe, video { max-width: 100%; }
       .video-frame { aspect-ratio: 16 / 9; }
       button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+      .sidebar-toggle-icon { transition: transform 0.2s ease; }
+      @media (min-width: 1024px) {
+        #appSidebar,
+        #appShell,
+        .sidebar-label,
+        .sidebar-user-card {
+          transition: all 0.2s ease;
+        }
+
+        body.sidebar-collapsed #appSidebar {
+          width: 5rem;
+        }
+
+        body.sidebar-collapsed #appShell {
+          padding-left: 5rem;
+        }
+
+        body.sidebar-collapsed .sidebar-label,
+        body.sidebar-collapsed .sidebar-user-card {
+          display: none;
+        }
+
+        body.sidebar-collapsed .sidebar-brand {
+          justify-content: center;
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+
+        body.sidebar-collapsed .sidebar-nav {
+          padding-left: 0.75rem;
+          padding-right: 0.75rem;
+        }
+
+        body.sidebar-collapsed .sidebar-link {
+          justify-content: center;
+          padding-left: 0.75rem;
+          padding-right: 0.75rem;
+        }
+
+        body.sidebar-collapsed .sidebar-toggle {
+          bottom: 1rem;
+          left: 1rem;
+          position: absolute;
+        }
+
+        body.sidebar-collapsed .sidebar-toggle-icon {
+          transform: rotate(180deg);
+        }
+      }
       @media (max-width: 640px) {
         h1, h2 { overflow-wrap: anywhere; }
         main { min-width: 0; }
@@ -103,26 +152,29 @@
       @endphp
 
       <div class="min-h-screen">
-        <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 lg:translate-x-0 lg:shadow-none">
-          <div class="flex h-full flex-col">
-            <div class="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
+        <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white shadow-xl transition-all duration-200 lg:translate-x-0 lg:shadow-none">
+          <div class="relative flex h-full flex-col">
+            <div class="sidebar-brand flex h-20 items-center gap-3 border-b border-slate-100 px-6">
               <div class="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-500 to-violet-700 text-sm font-black text-white shadow-lg shadow-indigo-200">EL</div>
-              <div>
+              <div class="sidebar-label min-w-0">
                 <div class="text-base font-extrabold tracking-tight">E-Learning</div>
                 <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Bimbingan Gambar</div>
               </div>
+              <button id="sidebarCollapse" type="button" class="sidebar-toggle ml-auto hidden h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 lg:grid" aria-label="Ciutkan sidebar" aria-pressed="false">
+                <i class="sidebar-toggle-icon fa-solid fa-angles-left"></i>
+              </button>
             </div>
 
-            <nav class="flex-1 space-y-2 px-4 py-6">
+            <nav class="sidebar-nav flex-1 space-y-2 px-4 py-6">
               @foreach($navItems as $item)
-                <a href="{{ route($item['route']) }}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition {{ $item['active'] ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950' }}">
-                  <i class="{{ $item['icon'] }} w-5 text-center"></i>
-                  <span>{{ $item['label'] }}</span>
+                <a href="{{ route($item['route']) }}" title="{{ $item['label'] }}" class="sidebar-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition {{ $item['active'] ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950' }}">
+                  <i class="{{ $item['icon'] }} w-5 shrink-0 text-center"></i>
+                  <span class="sidebar-label truncate">{{ $item['label'] }}</span>
                 </a>
               @endforeach
             </nav>
 
-            <div class="m-4 rounded-3xl bg-gradient-to-br from-indigo-50 to-cyan-50 p-4">
+            <div class="sidebar-user-card m-4 rounded-3xl bg-gradient-to-br from-indigo-50 to-cyan-50 p-4">
               <div class="text-xs font-bold uppercase tracking-wider text-indigo-500">Masuk sebagai</div>
               <div class="mt-2 font-extrabold text-slate-900">{{ $roleLabel }}</div>
               @if(($user->role ?? null) === 'student' && $user->student_class)
@@ -140,7 +192,7 @@
 
         <div id="sidebarBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
 
-        <div class="lg:pl-72">
+        <div id="appShell" class="transition-all duration-200 lg:pl-72">
           <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
             <div class="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
               <div class="flex items-center gap-3">
@@ -217,15 +269,39 @@
           const sidebar = document.getElementById('appSidebar');
           const backdrop = document.getElementById('sidebarBackdrop');
           const openButton = document.getElementById('sidebarOpen');
+          const collapseButton = document.getElementById('sidebarCollapse');
           const notifToggle = document.getElementById('notifToggle');
           const notifMenu = document.getElementById('notifMenu');
           const userToggle = document.getElementById('userToggle');
           const userMenu = document.getElementById('userMenu');
+          const collapsedStorageKey = 'lms.sidebarCollapsed';
 
           const closeSidebar = () => {
             sidebar?.classList.add('-translate-x-full');
             backdrop?.classList.add('hidden');
           };
+
+          const setSidebarCollapsed = (collapsed) => {
+            document.body.classList.toggle('sidebar-collapsed', collapsed);
+            collapseButton?.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+            collapseButton?.setAttribute('aria-label', collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar');
+
+            try {
+              localStorage.setItem(collapsedStorageKey, collapsed ? '1' : '0');
+            } catch (error) {
+              // localStorage can be blocked by strict browser settings.
+            }
+          };
+
+          try {
+            setSidebarCollapsed(localStorage.getItem(collapsedStorageKey) === '1');
+          } catch (error) {
+            setSidebarCollapsed(false);
+          }
+
+          collapseButton?.addEventListener('click', () => {
+            setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+          });
 
           openButton?.addEventListener('click', () => {
             sidebar?.classList.remove('-translate-x-full');
