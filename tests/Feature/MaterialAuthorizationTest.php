@@ -68,7 +68,7 @@ class MaterialAuthorizationTest extends TestCase
         ]);
     }
 
-    public function test_student_can_view_video_learning_for_their_class(): void
+    public function test_student_can_view_video_learning_for_their_program_group(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
         $student = User::factory()->create([
@@ -103,7 +103,7 @@ class MaterialAuthorizationTest extends TestCase
         $this->actingAs($otherStudent)
             ->get(route('materials.index'))
             ->assertOk()
-            ->assertDontSee($material->title);
+            ->assertSee($material->title);
     }
 
     public function test_student_can_view_video_learning_for_their_class_from_any_branch(): void
@@ -190,7 +190,37 @@ class MaterialAuthorizationTest extends TestCase
             ->assertDontSee($gambarMaterial->title);
     }
 
-    public function test_student_class_filter_handles_old_silver_typo(): void
+    public function test_skolastik_student_sees_skolastik_video_even_when_class_name_differs(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'skolastik',
+            'student_class' => 'Skolastik Intensif',
+            'branch' => 'Bandung',
+        ]);
+        $classroom = Classroom::create([
+            'program_type' => 'skolastik',
+            'title' => 'Skolastik Dasar',
+            'branch' => 'Jakarta Selatan',
+            'description' => null,
+            'teacher_id' => $teacher->id,
+        ]);
+        $material = Material::create([
+            'classroom_id' => $classroom->id,
+            'program_type' => 'skolastik',
+            'title' => 'Pembahasan TPS Skolastik',
+            'content' => null,
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertSee($material->title);
+    }
+
+    public function test_old_silver_typo_video_still_appears_for_gambar_student(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
         $student = User::factory()->create([

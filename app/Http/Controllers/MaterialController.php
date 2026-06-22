@@ -21,21 +21,6 @@ class MaterialController extends Controller
 
         $materials = Material::with('classroom')
             ->when($hasProgramTypeColumn, fn ($query) => $query->where('program_type', $selectedProgramType))
-            ->when(Auth::user()?->role === 'student', function ($query) {
-                $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
-
-                if ($studentClassKeys === []) {
-                    return;
-                }
-
-                $query->whereHas('classroom', function ($classroomQuery) use ($studentClassKeys) {
-                    $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
-                        foreach ($studentClassKeys as $studentClassKey) {
-                            $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-                        }
-                    });
-                });
-            })
             ->latest()
             ->get();
 
