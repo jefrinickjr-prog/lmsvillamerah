@@ -50,6 +50,43 @@ class TaskAuthorizationTest extends TestCase
         ]);
     }
 
+    public function test_teacher_can_create_task_with_questions(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $classroom = Classroom::create([
+            'title' => 'SR Gold',
+            'description' => null,
+            'teacher_id' => $teacher->id,
+        ]);
+        $material = Material::create([
+            'classroom_id' => $classroom->id,
+            'title' => 'Garis Dasar',
+            'content' => null,
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
+
+        $this->actingAs($teacher)
+            ->post(route('tasks.store'), [
+                'title' => 'Kuis garis',
+                'description' => 'Jawab soal berikut.',
+                'material_id' => $material->id,
+                'task_type' => 'multiple_choice',
+                'questions' => [
+                    [
+                        'type' => 'multiple_choice',
+                        'prompt' => 'Apa fungsi garis?',
+                        'options' => "Membentuk arah\nMenghapus objek",
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('tasks.index'));
+
+        $this->assertDatabaseHas('tasks', [
+            'title' => 'Kuis garis',
+            'task_type' => 'multiple_choice',
+        ]);
+    }
+
     public function test_student_can_view_tasks_for_their_class_from_any_branch(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);

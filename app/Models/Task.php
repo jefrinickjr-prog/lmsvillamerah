@@ -9,7 +9,24 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['material_id', 'title', 'description', 'due_at'];
+    protected $fillable = ['material_id', 'task_type', 'title', 'description', 'attachment_path', 'questions', 'due_at'];
+
+    public const TYPES = [
+        'assignment' => 'Tugas Upload / Instruksi',
+        'essay' => 'Pembelajaran Esai',
+        'multiple_choice' => 'Pilihan Ganda',
+        'questionnaire' => 'Kuesioner',
+    ];
+
+    public static function typeOptions(): array
+    {
+        return self::TYPES;
+    }
+
+    public static function typeLabel(?string $type): string
+    {
+        return self::TYPES[$type] ?? self::TYPES['assignment'];
+    }
 
     public function material()
     {
@@ -19,5 +36,13 @@ class Task extends Model
     public function submissions()
     {
         return $this->hasMany(Submission::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'due_at' => 'datetime',
+            'questions' => 'array',
+        ];
     }
 }

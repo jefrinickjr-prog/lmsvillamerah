@@ -7,6 +7,8 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class TaskController extends Controller
@@ -46,7 +48,9 @@ class TaskController extends Controller
 
         $videos = $this->availableVideos();
 
-        return view('tasks.create', compact('videos'));
+        $taskTypes = Task::typeOptions();
+
+        return view('tasks.create', compact('videos', 'taskTypes'));
     }
 
     public function store(Request $request)
@@ -57,6 +61,13 @@ class TaskController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'material_id' => ['required', 'integer', 'exists:materials,id'],
+            'task_type' => ['nullable', 'string', Rule::in(array_keys(Task::typeOptions()))],
+            'due_at' => ['nullable', 'date'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'questions' => ['nullable', 'array'],
+            'questions.*.prompt' => ['nullable', 'string'],
+            'questions.*.type' => ['nullable', 'string', Rule::in(['essay', 'multiple_choice', 'questionnaire'])],
+            'questions.*.options' => ['nullable', 'string'],
         ]);
 
         if (! $this->availableVideos()->contains('id', (int) $data['material_id'])) {
@@ -65,13 +76,59 @@ class TaskController extends Controller
             ]);
         }
 
+        $data['task_type'] = $data['task_type'] ?? 'assignment';
+
+        if ($request->hasFile('attachment')) {
+            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'public');
+        }
+
+        $data['questions'] = $this->normalizedQuestions($data['questions'] ?? []);
+
         Task::create($data);
-        return redirect()->route('tasks.index')->with('success', 'Task created');
+        return redirect()->route('tasks.index')->with('success', 'Tugas berhasil dibuat');
+    }
+
+    public function show(Task $task)
+    {
+        abort_unless($this->canViewTask($task), 403);
+
+        $task->load(['material.classroom', 'material.classrooms']);
+
+        return view('tasks.show', compact('task'));
     }
 
     private function canManageTasks(): bool
     {
         return in_array(Auth::user()?->role, ['teacher', 'admin', 'super_admin'], true);
+    }
+
+    private function canViewTask(Task $task): bool
+    {
+        if ($this->canManageTasks()) {
+            return true;
+        }
+
+        if (Auth::user()?->role !== 'student') {
+            return false;
+        }
+
+        $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
+        $videoAccesses = Auth::user()?->videoAccesses() ?? [User::normalizeProgramType(Auth::user()?->program_type)];
+
+        if ($studentClassKeys === [] || ! in_array($task->material?->program_type, $videoAccesses, true)) {
+            return false;
+        }
+
+        $task->loadMissing(['material.classroom', 'material.classrooms']);
+
+        $classrooms = $task->material?->classrooms;
+        if ($classrooms && $classrooms->isNotEmpty()) {
+            return $classrooms->contains(function ($classroom) use ($studentClassKeys) {
+                return in_array(User::normalizeStudentClass($classroom->title), $studentClassKeys, true);
+            });
+        }
+
+        return in_array(User::normalizeStudentClass($task->material?->classroom?->title), $studentClassKeys, true);
     }
 
     private function availableVideos()
@@ -96,5 +153,31 @@ class TaskController extends Controller
                 $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
             }
         });
+    }
+
+    private function normalizedQuestions(array $questions): array
+    {
+        return collect($questions)
+            ->map(function (array $question) {
+                $prompt = trim((string) ($question['prompt'] ?? ''));
+
+                if ($prompt === '') {
+                    return null;
+                }
+
+                $type = $question['type'] ?? 'essay';
+                $type = in_array($type, ['essay', 'multiple_choice', 'questionnaire'], true) ? $type : 'essay';
+                $options = preg_split('/\r\n|\r|\n/', (string) ($question['options'] ?? ''));
+                $options = array_values(array_filter(array_map('trim', $options)));
+
+                return [
+                    'type' => $type,
+                    'prompt' => $prompt,
+                    'options' => $type === 'multiple_choice' ? $options : [],
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }

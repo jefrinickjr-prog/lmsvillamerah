@@ -58,6 +58,27 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         $this->line('Added classroom_material pivot table');
     }
 
+    if (Schema::hasTable('tasks') && ! Schema::hasColumn('tasks', 'task_type')) {
+        Schema::table('tasks', function (Blueprint $table) {
+            $table->string('task_type')->default('assignment')->after('material_id');
+        });
+        $this->line('Added tasks.task_type');
+    }
+
+    if (Schema::hasTable('tasks') && ! Schema::hasColumn('tasks', 'attachment_path')) {
+        Schema::table('tasks', function (Blueprint $table) {
+            $table->string('attachment_path')->nullable()->after('description');
+        });
+        $this->line('Added tasks.attachment_path');
+    }
+
+    if (Schema::hasTable('tasks') && ! Schema::hasColumn('tasks', 'questions')) {
+        Schema::table('tasks', function (Blueprint $table) {
+            $table->json('questions')->nullable()->after('attachment_path');
+        });
+        $this->line('Added tasks.questions');
+    }
+
     if (Schema::hasTable('users') && Schema::hasColumn('users', 'program_type')) {
         DB::table('users')->whereNull('program_type')->orWhere('program_type', '')->update(['program_type' => 'gambar']);
     }

@@ -35,11 +35,26 @@
               <i class="fa-solid fa-clipboard-list"></i>
             </div>
             <h3 class="mt-5 text-lg font-black text-slate-950">{{ $task->title }}</h3>
+            <div class="mt-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ \App\Models\Task::typeLabel($task->task_type ?? 'assignment') }}</div>
           </div>
           <span class="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">{{ optional($task->due_at)->format('Y-m-d') ?? 'Tanpa deadline' }}</span>
         </div>
         <p class="mt-3 text-sm leading-6 text-slate-500">{{ \Illuminate\Support\Str::limit($task->description, 120) }}</p>
-        <a href="#" class="mt-5 inline-flex items-center gap-2 text-sm font-black text-indigo-600">
+        <div class="mt-4 flex flex-wrap gap-2">
+          @if($task->attachment_path)
+            <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600">
+              <i class="fa-solid fa-file-pdf"></i>
+              PDF
+            </span>
+          @endif
+          @if(! empty($task->questions))
+            <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-600">
+              <i class="fa-solid fa-circle-question"></i>
+              {{ count($task->questions) }} soal
+            </span>
+          @endif
+        </div>
+        <a href="{{ route('tasks.show', $task) }}" class="mt-5 inline-flex items-center gap-2 text-sm font-black text-indigo-600">
           Lihat tugas
           <i class="fa-solid fa-arrow-right text-xs"></i>
         </a>

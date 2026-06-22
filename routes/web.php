@@ -44,7 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('classrooms', ClassroomController::class)->only(['index','create','store','edit','update','destroy']);
     Route::resource('students', StudentManagementController::class)->only(['index','edit','update']);
     Route::resource('materials', MaterialController::class)->only(['index','create','store','edit','update','destroy']);
-    Route::resource('tasks', TaskController::class)->only(['index','create','store']);
+    Route::resource('tasks', TaskController::class)->only(['index','show','create','store']);
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
