@@ -7,10 +7,11 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'program_type', 'video_accesses', 'student_class', 'branch', 'academic_year', 'student_code', 'photo_path', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'program_type', 'video_accesses', 'student_class', 'branch', 'academic_year', 'student_code', 'photo_path', 'email_verified_at', 'approved_at', 'approved_by'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -109,6 +110,24 @@ class User extends Authenticatable
         return self::normalizeVideoAccesses($this->video_accesses ?? null, $this->program_type ?? null, $this->student_class ?? null);
     }
 
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'approved_by');
+    }
+
+    public function needsAdminApproval(): bool
+    {
+        return ($this->role ?? null) === 'admin' && $this->approved_at === null;
+    }
+
+    public function approveAsAdmin(User $approver): void
+    {
+        $this->forceFill([
+            'approved_at' => now(),
+            'approved_by' => $approver->id,
+        ])->save();
+    }
+
     public static function studentClassOptions(?string $programType = null): array
     {
         if ($programType !== null) {
@@ -204,6 +223,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
             'video_accesses' => 'array',
         ];

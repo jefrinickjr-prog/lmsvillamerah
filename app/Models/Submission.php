@@ -9,7 +9,7 @@ class Submission extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['task_id', 'student_id', 'content', 'attachment', 'score'];
+    protected $fillable = ['task_id', 'student_id', 'content', 'answers', 'attachment', 'score'];
 
     public function task()
     {
@@ -19,5 +19,12 @@ class Submission extends Model
     public function student()
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'answers' => 'array',
+        ];
     }
 }

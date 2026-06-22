@@ -190,6 +190,14 @@
             'route' => 'register',
             'active' => request()->routeIs('register'),
           ];
+          if (($user->role ?? null) === 'super_admin') {
+            $navItems[] = [
+              'label' => 'Kelola Admin',
+              'icon' => 'fa-solid fa-user-shield',
+              'route' => 'admin-users.index',
+              'active' => request()->routeIs('admin-users.*'),
+            ];
+          }
         }
 
         $unread = \App\Models\UserNotification::where('user_id', auth()->id())->where('read', false)->count();

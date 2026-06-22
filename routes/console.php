@@ -29,6 +29,23 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         $this->line('Added users.video_accesses');
     }
 
+    $addedAdminApproval = false;
+
+    if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'approved_at')) {
+        Schema::table('users', function (Blueprint $table) {
+            $table->timestamp('approved_at')->nullable()->after('email_verified_at');
+        });
+        $addedAdminApproval = true;
+        $this->line('Added users.approved_at');
+    }
+
+    if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'approved_by')) {
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('approved_by')->nullable()->after('approved_at')->constrained('users')->nullOnDelete();
+        });
+        $this->line('Added users.approved_by');
+    }
+
     if (Schema::hasTable('classrooms') && ! Schema::hasColumn('classrooms', 'program_type')) {
         Schema::table('classrooms', function (Blueprint $table) {
             $table->string('program_type')->default('gambar')->after('id');
@@ -79,6 +96,28 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         $this->line('Added tasks.questions');
     }
 
+    if (
+        Schema::hasTable('classrooms')
+        && Schema::hasTable('tasks')
+        && ! Schema::hasTable('classroom_task')
+    ) {
+        Schema::create('classroom_task', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('classroom_id')->constrained('classrooms')->cascadeOnDelete();
+            $table->foreignId('task_id')->constrained('tasks')->cascadeOnDelete();
+            $table->timestamps();
+            $table->unique(['classroom_id', 'task_id']);
+        });
+        $this->line('Added classroom_task pivot table');
+    }
+
+    if (Schema::hasTable('submissions') && ! Schema::hasColumn('submissions', 'answers')) {
+        Schema::table('submissions', function (Blueprint $table) {
+            $table->json('answers')->nullable()->after('content');
+        });
+        $this->line('Added submissions.answers');
+    }
+
     if (Schema::hasTable('users') && Schema::hasColumn('users', 'program_type')) {
         DB::table('users')->whereNull('program_type')->orWhere('program_type', '')->update(['program_type' => 'gambar']);
     }
@@ -104,6 +143,17 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
                 'video_accesses' => json_encode(['gambar', 'skolastik']),
                 'updated_at' => now(),
             ]);
+    }
+
+    if ($addedAdminApproval && Schema::hasTable('users') && Schema::hasColumn('users', 'approved_at')) {
+        DB::table('users')
+            ->whereIn('role', ['admin', 'super_admin'])
+            ->whereNull('approved_at')
+            ->update([
+                'approved_at' => now(),
+                'updated_at' => now(),
+            ]);
+        $this->line('Approved existing admin and super admin accounts.');
     }
 
     if (Schema::hasTable('classrooms') && Schema::hasColumn('classrooms', 'program_type')) {
@@ -147,6 +197,32 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
             });
     }
 
+    if (
+        Schema::hasTable('classroom_task')
+        && Schema::hasTable('tasks')
+        && Schema::hasTable('materials')
+        && Schema::hasColumn('tasks', 'material_id')
+        && Schema::hasColumn('materials', 'classroom_id')
+    ) {
+        DB::table('tasks')
+            ->join('materials', 'tasks.material_id', '=', 'materials.id')
+            ->whereNotNull('materials.classroom_id')
+            ->orderBy('tasks.id')
+            ->get(['tasks.id as task_id', 'materials.classroom_id'])
+            ->each(function ($task) {
+                DB::table('classroom_task')->updateOrInsert(
+                    [
+                        'classroom_id' => $task->classroom_id,
+                        'task_id' => $task->task_id,
+                    ],
+                    [
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            });
+    }
+
     if ($this->option('seed-defaults') && Schema::hasTable('users')) {
         $admin = User::firstOrCreate(
             ['email' => 'admin@lmsvillamerah.sivmi.id'],
@@ -156,6 +232,7 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
                 'role' => 'admin',
                 'program_type' => 'gambar',
                 'email_verified_at' => now(),
+                'approved_at' => now(),
             ]
         );
 

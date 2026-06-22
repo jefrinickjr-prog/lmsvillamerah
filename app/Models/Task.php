@@ -33,6 +33,11 @@ class Task extends Model
         return $this->belongsTo(Material::class);
     }
 
+    public function classrooms()
+    {
+        return $this->belongsToMany(Classroom::class)->withTimestamps();
+    }
+
     public function submissions()
     {
         return $this->hasMany(Submission::class);

@@ -66,7 +66,6 @@ class ClassroomController extends Controller
         abort_unless($this->canManageClassroom($classroom), 403);
 
         $classroom->update($this->validatedClassroomData($request, $classroom));
-        $classroom->primaryMaterials()->update(['program_type' => $classroom->program_type]);
 
         return redirect()->route('classrooms.index')->with('success', 'Kelas berhasil diperbarui');
     }

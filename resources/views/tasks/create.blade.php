@@ -10,7 +10,7 @@
         Kembali ke tugas
       </a>
       <h2 class="mt-4 text-3xl font-black tracking-tight text-slate-950">Buat Tugas</h2>
-      <p class="mt-2 text-slate-500">Tambahkan instruksi tugas dan hubungkan ke video pembelajaran sesuai kelas program.</p>
+      <p class="mt-2 text-slate-500">Tambahkan instruksi, PDF, target kelas, dan soal tanpa wajib mengaitkan video pembelajaran.</p>
     </div>
 
     <form method="POST" action="{{ route('tasks.store') }}" enctype="multipart/form-data" class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:p-8">
@@ -47,10 +47,10 @@
           <p class="mt-2 text-xs font-semibold text-slate-400">Opsional, maksimal 10MB. Gunakan untuk modul, lembar soal, atau referensi.</p>
         </div>
         <div>
-          <label class="mb-2 block text-sm font-bold text-slate-700">Video Pembelajaran</label>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Video Pembelajaran <span class="font-semibold text-slate-400">(opsional)</span></label>
           @if($videos->isNotEmpty())
-            <select name="material_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
-              <option value="">Pilih video pembelajaran</option>
+            <select name="material_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+              <option value="">Tidak dikaitkan dengan video</option>
               @foreach($videos as $video)
                 @php
                   $videoClassrooms = $video->classrooms->isNotEmpty()
@@ -62,95 +62,67 @@
             </select>
           @else
             <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-              Belum ada video pembelajaran yang tersedia. Tambahkan video terlebih dahulu sebelum membuat tugas.
+              Belum ada video pembelajaran. Tugas tetap bisa dibuat tanpa video.
             </div>
-            <a href="{{ route('materials.create') }}" class="mt-3 inline-flex items-center gap-2 text-sm font-black text-indigo-600">
-              <i class="fa-solid fa-plus text-xs"></i>
-              Tambah video pembelajaran
-            </a>
+          @endif
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Target Kelas</label>
+          @if($classrooms->isNotEmpty())
+            @php
+              $selectedClassroomIds = array_map('intval', old('classroom_ids', []));
+            @endphp
+            <div class="grid gap-3 sm:grid-cols-2">
+              @foreach($classrooms as $classroom)
+                <label class="flex min-h-14 cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-700">
+                  <input type="checkbox" name="classroom_ids[]" value="{{ $classroom->id }}" class="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600" @checked(in_array((int) $classroom->id, $selectedClassroomIds, true))>
+                  <span>
+                    <span class="block">{{ $classroom->title }}</span>
+                    <span class="mt-1 block text-xs font-semibold text-slate-400">{{ $classroom->teacher->name ?? 'Pengajar' }}</span>
+                  </span>
+                </label>
+              @endforeach
+            </div>
+          @else
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">Belum ada kelas tersedia.</div>
           @endif
         </div>
         <section class="rounded-3xl border border-slate-100 bg-slate-50 p-4 sm:p-5">
-          <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <h3 class="font-black text-slate-900">Soal Tugas</h3>
-              <p class="mt-1 text-sm text-slate-500">Tambahkan soal esai, pilihan ganda, atau kuesioner pembelajaran.</p>
-            </div>
-            <button id="addQuestion" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black text-white hover:bg-slate-800">
-              <i class="fa-solid fa-plus"></i>
-              Tambah Soal
-            </button>
+          <div>
+            <h3 class="font-black text-slate-900">Soal Tugas</h3>
+            <p class="mt-1 text-sm text-slate-500">Isi sampai 20 soal. Kosongkan slot yang tidak dipakai.</p>
           </div>
-          <div id="questionsList" class="mt-4 space-y-4"></div>
-          <template id="questionTemplate">
-            <div class="question-item rounded-2xl border border-slate-200 bg-white p-4">
-              <div class="mb-3 flex items-center justify-between gap-3">
-                <span class="question-title text-sm font-black text-indigo-600">Soal</span>
-                <button type="button" class="remove-question rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-600">Hapus</button>
-              </div>
+          <div class="mt-4 space-y-4">
+            @for($index = 0; $index < 20; $index++)
+              <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="mb-3 text-sm font-black text-indigo-600">Soal {{ $index + 1 }}</div>
               <div class="grid gap-3 sm:grid-cols-3">
                 <div>
                   <label class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-400">Tipe</label>
-                  <select data-name="type" class="question-type block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none">
-                    <option value="essay">Esai</option>
-                    <option value="multiple_choice">Pilihan Ganda</option>
-                    <option value="questionnaire">Kuesioner</option>
+                  <select name="questions[{{ $index }}][type]" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none">
+                    <option value="essay" @selected(old("questions.$index.type") === 'essay')>Esai</option>
+                    <option value="multiple_choice" @selected(old("questions.$index.type") === 'multiple_choice')>Pilihan Ganda</option>
+                    <option value="questionnaire" @selected(old("questions.$index.type") === 'questionnaire')>Kuesioner</option>
                   </select>
                 </div>
                 <div class="sm:col-span-2">
                   <label class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-400">Pertanyaan</label>
-                  <input data-name="prompt" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none" placeholder="Tulis pertanyaan...">
+                  <input name="questions[{{ $index }}][prompt]" value="{{ old("questions.$index.prompt") }}" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none" placeholder="Tulis pertanyaan...">
                 </div>
               </div>
-              <div class="question-options mt-3 hidden">
+              <div class="mt-3">
                 <label class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-400">Pilihan Jawaban</label>
-                <textarea data-name="options" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none" rows="4" placeholder="Satu pilihan per baris"></textarea>
+                <textarea name="questions[{{ $index }}][options]" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none" rows="3" placeholder="Untuk pilihan ganda saja. Satu pilihan per baris.">{{ old("questions.$index.options") }}</textarea>
               </div>
             </div>
-          </template>
+            @endfor
+          </div>
         </section>
-        <button class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none" type="submit" @disabled($videos->isEmpty())>
+        <button class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none" type="submit" @disabled($classrooms->isEmpty())>
           <i class="fa-solid fa-save"></i>
           Simpan Tugas
         </button>
       </div>
     </form>
   </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const list = document.getElementById('questionsList');
-      const template = document.getElementById('questionTemplate');
-      const addButton = document.getElementById('addQuestion');
-
-      const renumberQuestions = () => {
-        list.querySelectorAll('.question-item').forEach((item, index) => {
-          item.querySelector('.question-title').textContent = `Soal ${index + 1}`;
-          item.querySelectorAll('[data-name]').forEach((field) => {
-            field.name = `questions[${index}][${field.dataset.name}]`;
-          });
-        });
-      };
-
-      const addQuestion = () => {
-        const item = template.content.firstElementChild.cloneNode(true);
-        const typeSelect = item.querySelector('.question-type');
-        const options = item.querySelector('.question-options');
-
-        typeSelect.addEventListener('change', () => {
-          options.classList.toggle('hidden', typeSelect.value !== 'multiple_choice');
-        });
-        item.querySelector('.remove-question').addEventListener('click', () => {
-          item.remove();
-          renumberQuestions();
-        });
-
-        list.appendChild(item);
-        renumberQuestions();
-      };
-
-      addButton?.addEventListener('click', addQuestion);
-      addQuestion();
-    });
-  </script>
 @endsection

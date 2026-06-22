@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -26,7 +27,7 @@ Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login'])->name('login.post');
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::get('/dashboard', function () {
         $role = Auth::user()->role ?? 'student';
 
@@ -44,6 +45,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('classrooms', ClassroomController::class)->only(['index','create','store','edit','update','destroy']);
     Route::resource('students', StudentManagementController::class)->only(['index','edit','update']);
     Route::resource('materials', MaterialController::class)->only(['index','create','store','edit','update','destroy']);
+    Route::get('tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');
+    Route::post('tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
     Route::resource('tasks', TaskController::class)->only(['index','show','create','store']);
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
@@ -52,6 +55,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('register', [RegisterController::class, 'register'])->name('register.post');
+    Route::get('admin-users', [AdminUserController::class, 'index'])->name('admin-users.index');
+    Route::get('admin-users/create', [AdminUserController::class, 'create'])->name('admin-users.create');
+    Route::post('admin-users', [AdminUserController::class, 'store'])->name('admin-users.store');
+    Route::put('admin-users/{user}/approve', [AdminUserController::class, 'approve'])->name('admin-users.approve');
 
     Route::get('/absensi-siswa', [AttendanceController::class, 'index'])->name('attendances.index');
     Route::post('/absensi-siswa', [AttendanceController::class, 'store'])->name('attendances.store');

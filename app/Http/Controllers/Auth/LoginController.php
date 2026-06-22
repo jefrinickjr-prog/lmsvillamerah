@@ -26,6 +26,17 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))){
             $request->session()->regenerate();
+
+            if (Auth::user()?->needsAdminApproval()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()
+                    ->withErrors(['email' => 'Akun admin masih menunggu persetujuan super admin.'])
+                    ->onlyInput('email');
+            }
+
             return redirect()->intended(route('dashboard'));
         }
 
