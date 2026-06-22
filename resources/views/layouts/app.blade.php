@@ -34,17 +34,30 @@
           overflow: hidden;
         }
 
+        #sidebarToggle:checked ~ #appSidebar {
+          transform: translateX(0) !important;
+        }
+
+        #sidebarToggle:checked ~ #sidebarBackdrop {
+          display: block !important;
+        }
+
+        body:has(#sidebarToggle:checked) {
+          overflow: hidden;
+        }
+
         body.sidebar-open #sidebarBackdrop {
-          display: block;
+          display: block !important;
         }
 
         #appSidebar {
           height: 100vh;
           height: 100dvh;
-          max-width: calc(100vw - 1.25rem);
+          max-width: calc(100vw - 2.5rem);
           overflow-y: auto;
           overscroll-behavior: contain;
-          width: min(21rem, 88vw);
+          transform: translateX(-105%);
+          width: min(19rem, 82vw);
         }
 
         #sidebarBackdrop {
@@ -52,7 +65,9 @@
           backdrop-filter: blur(2px);
         }
 
-        [data-sidebar-close] {
+        [data-sidebar-close],
+        [data-sidebar-open] {
+          cursor: pointer;
           position: relative;
           touch-action: manipulation;
           z-index: 60;
@@ -182,6 +197,8 @@
       @endphp
 
       <div class="min-h-screen">
+        <input id="sidebarToggle" type="checkbox" class="sr-only" aria-hidden="true" tabindex="-1">
+
         <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white shadow-xl transition-all duration-200 lg:translate-x-0 lg:shadow-none">
           <div class="relative flex h-full flex-col">
             <div class="sidebar-brand flex h-20 items-center gap-3 border-b border-slate-100 px-6">
@@ -190,9 +207,9 @@
                 <div class="text-base font-extrabold tracking-tight">E-Learning</div>
                 <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Bimbingan Gambar</div>
               </div>
-              <button id="sidebarClose" data-sidebar-close type="button" class="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden" aria-label="Tutup sidebar">
+              <label id="sidebarClose" data-sidebar-close for="sidebarToggle" class="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden" aria-label="Tutup sidebar" role="button" tabindex="0">
                 <i class="fa-solid fa-xmark"></i>
-              </button>
+              </label>
               <button id="sidebarCollapse" type="button" class="sidebar-toggle ml-auto hidden h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 lg:grid" aria-label="Ciutkan sidebar" aria-pressed="false">
                 <i class="sidebar-toggle-icon fa-solid fa-angles-left"></i>
               </button>
@@ -223,15 +240,15 @@
           </div>
         </aside>
 
-        <div id="sidebarBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+        <label id="sidebarBackdrop" data-sidebar-close for="sidebarToggle" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden" aria-label="Tutup sidebar"></label>
 
         <div id="appShell" class="transition-all duration-200 lg:pl-72">
           <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
             <div class="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
               <div class="flex items-center gap-3">
-                <button id="sidebarOpen" type="button" class="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 lg:hidden" aria-label="Buka sidebar">
+                <label id="sidebarOpen" data-sidebar-open for="sidebarToggle" class="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 lg:hidden" aria-label="Buka sidebar" role="button" tabindex="0">
                   <i class="fa-solid fa-bars"></i>
-                </button>
+                </label>
                 <div class="min-w-0">
                   <div class="text-sm font-semibold text-slate-500">Selamat datang,</div>
                   <h1 class="truncate text-lg font-extrabold tracking-tight sm:text-2xl">{{ $user->name }}</h1>
@@ -300,6 +317,7 @@
       <script>
         document.addEventListener('DOMContentLoaded', function () {
           const sidebar = document.getElementById('appSidebar');
+          const sidebarToggle = document.getElementById('sidebarToggle');
           const backdrop = document.getElementById('sidebarBackdrop');
           const openButton = document.getElementById('sidebarOpen');
           const closeButton = document.getElementById('sidebarClose');
@@ -313,6 +331,9 @@
           const closeSidebar = () => {
             sidebar?.classList.add('-translate-x-full');
             backdrop?.classList.add('hidden');
+            if (sidebarToggle) {
+              sidebarToggle.checked = false;
+            }
             document.body.classList.remove('sidebar-open');
           };
 
@@ -338,11 +359,23 @@
             setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
           });
 
-          openButton?.addEventListener('click', () => {
+          const openSidebar = () => {
             sidebar?.classList.remove('-translate-x-full');
             backdrop?.classList.remove('hidden');
+            if (sidebarToggle) {
+              sidebarToggle.checked = true;
+            }
             document.body.classList.add('sidebar-open');
-          });
+          };
+
+          const openFromTap = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openSidebar();
+          };
+
+          openButton?.addEventListener('click', openFromTap);
+          openButton?.addEventListener('touchend', openFromTap, { passive: false });
 
           const closeFromTap = (event) => {
             event.preventDefault();
@@ -357,6 +390,12 @@
 
           backdrop?.addEventListener('click', closeSidebar);
           backdrop?.addEventListener('touchend', closeFromTap, { passive: false });
+          sidebarToggle?.addEventListener('change', () => {
+            const isOpen = sidebarToggle.checked;
+            sidebar?.classList.toggle('-translate-x-full', !isOpen);
+            backdrop?.classList.toggle('hidden', !isOpen);
+            document.body.classList.toggle('sidebar-open', isOpen);
+          });
           window.addEventListener('resize', () => {
             if (window.innerWidth >= 1024) {
               closeSidebar();
