@@ -25,6 +25,8 @@
       body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       html, body { max-width: 100%; overflow-x: hidden; }
       img, iframe, video { max-width: 100%; }
+      .video-frame { aspect-ratio: 16 / 9; }
+      button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
       @media (max-width: 640px) {
         h1, h2 { overflow-wrap: anywhere; }
         main { min-width: 0; }
@@ -36,6 +38,7 @@
         .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: 0 8px 18px rgb(15 23 42 / 0.08); }
         table { min-width: 680px; }
         input, select, textarea, button, a { max-width: 100%; }
+        input, select, textarea { font-size: 16px; }
         main .inline-flex.rounded-2xl,
         main form .inline-flex.rounded-2xl,
         main form button.rounded-2xl { width: 100%; justify-content: center; }
