@@ -48,7 +48,6 @@ textarea {
 @media (max-width: 1023px) {
     body.sidebar-open {
         overflow: hidden;
-        touch-action: none;
     }
 
     body.sidebar-open #sidebarBackdrop {
@@ -67,6 +66,12 @@ textarea {
     #sidebarBackdrop {
         background: rgb(15 23 42 / 0.55);
         backdrop-filter: blur(2px);
+    }
+
+    [data-sidebar-close] {
+        position: relative;
+        touch-action: manipulation;
+        z-index: 60;
     }
 }
 

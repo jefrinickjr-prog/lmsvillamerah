@@ -32,7 +32,6 @@
       @media (max-width: 1023px) {
         body.sidebar-open {
           overflow: hidden;
-          touch-action: none;
         }
 
         body.sidebar-open #sidebarBackdrop {
@@ -51,6 +50,12 @@
         #sidebarBackdrop {
           background: rgb(15 23 42 / 0.55);
           backdrop-filter: blur(2px);
+        }
+
+        [data-sidebar-close] {
+          position: relative;
+          touch-action: manipulation;
+          z-index: 60;
         }
       }
       @media (min-width: 1024px) {
@@ -185,7 +190,7 @@
                 <div class="text-base font-extrabold tracking-tight">E-Learning</div>
                 <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Bimbingan Gambar</div>
               </div>
-              <button id="sidebarClose" type="button" class="ml-auto grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 lg:hidden" aria-label="Tutup sidebar">
+              <button id="sidebarClose" data-sidebar-close type="button" class="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden" aria-label="Tutup sidebar">
                 <i class="fa-solid fa-xmark"></i>
               </button>
               <button id="sidebarCollapse" type="button" class="sidebar-toggle ml-auto hidden h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 lg:grid" aria-label="Ciutkan sidebar" aria-pressed="false">
@@ -339,8 +344,19 @@
             document.body.classList.add('sidebar-open');
           });
 
-          closeButton?.addEventListener('click', closeSidebar);
+          const closeFromTap = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            closeSidebar();
+          };
+
+          document.querySelectorAll('[data-sidebar-close]').forEach((button) => {
+            button.addEventListener('click', closeFromTap);
+            button.addEventListener('touchend', closeFromTap, { passive: false });
+          });
+
           backdrop?.addEventListener('click', closeSidebar);
+          backdrop?.addEventListener('touchend', closeFromTap, { passive: false });
           window.addEventListener('resize', () => {
             if (window.innerWidth >= 1024) {
               closeSidebar();
