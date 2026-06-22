@@ -17,14 +17,15 @@ class MaterialController extends Controller
     {
         $programTypes = $this->videoGroups();
         $hasProgramTypeColumn = Schema::hasColumn('materials', 'program_type');
-        $selectedProgramType = $this->selectedVideoGroup($programTypes, $hasProgramTypeColumn);
+        $visibleProgramTypes = $this->visibleVideoGroups($programTypes);
+        $selectedProgramType = $this->selectedVideoGroup($visibleProgramTypes, $hasProgramTypeColumn);
 
         $materials = Material::with('classroom')
             ->when($hasProgramTypeColumn, fn ($query) => $query->where('program_type', $selectedProgramType))
             ->latest()
             ->get();
 
-        return view('materials.index', compact('materials', 'programTypes', 'selectedProgramType'));
+        return view('materials.index', compact('materials', 'programTypes', 'visibleProgramTypes', 'selectedProgramType'));
     }
 
     public function create()
@@ -143,23 +144,36 @@ class MaterialController extends Controller
     {
         return [
             'gambar' => 'Video Tutorial Gambar',
-            'skolastik' => 'Video Pengerjaan Skolastik',
+            'skolastik' => 'Video Pembahasan Skolastik',
         ];
     }
 
     private function selectedVideoGroup(array $programTypes, bool $hasProgramTypeColumn): string
     {
-        $requested = request('program_type', 'gambar');
-
-        if (Auth::user()?->role === 'student' && Schema::hasColumn('users', 'program_type')) {
-            $requested = Auth::user()?->program_type ?: $requested;
-        }
-
         if (! $hasProgramTypeColumn) {
             return 'gambar';
         }
 
-        return array_key_exists($requested, $programTypes) ? $requested : 'gambar';
+        $requested = request('program_type');
+
+        if (Auth::user()?->role === 'student' && ($requested === null || $requested === '')) {
+            return array_key_first($programTypes);
+        }
+
+        $requested = $requested ?: 'gambar';
+
+        return array_key_exists($requested, $programTypes) ? $requested : array_key_first($programTypes);
+    }
+
+    private function visibleVideoGroups(array $programTypes): array
+    {
+        if (Auth::user()?->role !== 'student') {
+            return $programTypes;
+        }
+
+        $accesses = Auth::user()?->videoAccesses() ?? ['gambar'];
+
+        return array_intersect_key($programTypes, array_flip($accesses)) ?: ['gambar' => $programTypes['gambar']];
     }
 
     private function normalizeYoutubeEmbedUrl(?string $url): ?string

@@ -68,6 +68,7 @@
             <th class="px-5 py-4">Kode</th>
             <th class="px-5 py-4">Siswa</th>
             <th class="px-5 py-4">Program</th>
+            <th class="px-5 py-4">Akses Video</th>
             <th class="px-5 py-4">Kelas</th>
             <th class="px-5 py-4">Cabang</th>
             <th class="px-5 py-4">Tahun Ajaran</th>
@@ -83,6 +84,13 @@
                 <div class="mt-1 text-sm font-semibold text-slate-400">{{ $student->email }}</div>
               </td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-violet-600">{{ \App\Models\User::programTypeLabel($student->program_type ?? 'gambar') }}</td>
+              <td class="px-5 py-4">
+                <div class="flex flex-wrap gap-2">
+                  @foreach($student->videoAccesses() as $access)
+                    <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ \App\Models\User::videoAccessLabel($access) }}</span>
+                  @endforeach
+                </div>
+              </td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-slate-600">{{ $student->student_class ?? '-' }}</td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-slate-600">{{ $student->branch ?? '-' }}</td>
               <td class="whitespace-nowrap px-5 py-4 text-sm font-bold text-slate-600">{{ $student->academic_year ?? '-' }}</td>
@@ -95,7 +103,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="7" class="px-5 py-10 text-center">
+              <td colspan="8" class="px-5 py-10 text-center">
                 <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
                   <i class="fa-solid fa-users"></i>
                 </div>

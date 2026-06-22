@@ -133,18 +133,20 @@ class MaterialAuthorizationTest extends TestCase
             ->assertSee($material->title);
     }
 
-    public function test_student_only_sees_video_learning_for_their_program_group(): void
+    public function test_student_sees_video_learning_from_each_granted_access(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
         $gambarStudent = User::factory()->create([
             'role' => 'student',
             'program_type' => 'gambar',
+            'video_accesses' => ['gambar', 'skolastik'],
             'student_class' => 'SR Gold',
             'branch' => 'Bandung',
         ]);
         $skolastikStudent = User::factory()->create([
             'role' => 'student',
             'program_type' => 'skolastik',
+            'video_accesses' => ['skolastik'],
             'student_class' => 'Skolastik Dasar',
             'branch' => 'Bandung',
         ]);
@@ -183,6 +185,12 @@ class MaterialAuthorizationTest extends TestCase
             ->assertSee($gambarMaterial->title)
             ->assertDontSee($skolastikMaterial->title);
 
+        $this->actingAs($gambarStudent)
+            ->get(route('materials.index', ['program_type' => 'skolastik']))
+            ->assertOk()
+            ->assertSee($skolastikMaterial->title)
+            ->assertDontSee($gambarMaterial->title);
+
         $this->actingAs($skolastikStudent)
             ->get(route('materials.index'))
             ->assertOk()
@@ -196,6 +204,7 @@ class MaterialAuthorizationTest extends TestCase
         $student = User::factory()->create([
             'role' => 'student',
             'program_type' => 'skolastik',
+            'video_accesses' => ['skolastik'],
             'student_class' => 'Skolastik Intensif',
             'branch' => 'Bandung',
         ]);

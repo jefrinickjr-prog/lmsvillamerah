@@ -58,6 +58,25 @@
           </select>
         </div>
 
+        @php
+          $selectedVideoAccesses = old('video_accesses', $student->videoAccesses());
+          if (! is_array($selectedVideoAccesses)) {
+            $selectedVideoAccesses = [$selectedVideoAccesses];
+          }
+        @endphp
+        <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Akses Video Pembelajaran</label>
+          <div class="grid gap-3 sm:grid-cols-2">
+            @foreach($videoAccessOptions as $value => $label)
+              <label class="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-700">
+                <input type="checkbox" name="video_accesses[]" value="{{ $value }}" class="video-access-checkbox h-5 w-5 rounded border-slate-300 text-indigo-600" @checked(in_array($value, $selectedVideoAccesses, true))>
+                <span>{{ $label }}</span>
+              </label>
+            @endforeach
+          </div>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Centang lebih dari satu jika siswa boleh menonton video gambar dan skolastik.</p>
+        </div>
+
         <div class="grid gap-5 sm:grid-cols-2">
           <div>
             <label class="mb-2 block text-sm font-bold text-slate-700">Cabang</label>
@@ -94,4 +113,25 @@
       </div>
     </form>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const programSelect = document.querySelector('select[name="program_type"]');
+      const classSelect = document.querySelector('select[name="student_class"]');
+      const accessCheckboxes = document.querySelectorAll('.video-access-checkbox');
+
+      const syncVideoAccesses = () => {
+        const className = (classSelect?.value || '').trim().toLowerCase();
+        const programType = programSelect?.value || 'gambar';
+        const allowed = className === 'sr gold' ? ['gambar', 'skolastik'] : [programType];
+
+        accessCheckboxes.forEach((checkbox) => {
+          checkbox.checked = allowed.includes(checkbox.value);
+        });
+      };
+
+      programSelect?.addEventListener('change', syncVideoAccesses);
+      classSelect?.addEventListener('change', syncVideoAccesses);
+    });
+  </script>
 @endsection

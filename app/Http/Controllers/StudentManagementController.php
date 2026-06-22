@@ -47,10 +47,11 @@ class StudentManagementController extends Controller
         abort_unless($this->canManageStudent($student), 403);
 
         $programTypes = User::programTypeOptions();
+        $videoAccessOptions = User::videoAccessOptions();
         $studentClassesByProgram = User::STUDENT_CLASSES;
         $branches = $this->manageableBranches();
 
-        return view('students.edit', compact('student', 'programTypes', 'studentClassesByProgram', 'branches'));
+        return view('students.edit', compact('student', 'programTypes', 'videoAccessOptions', 'studentClassesByProgram', 'branches'));
     }
 
     public function update(Request $request, User $student)
@@ -63,6 +64,8 @@ class StudentManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($student->id)],
             'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
+            'video_accesses' => ['nullable', 'array'],
+            'video_accesses.*' => ['string', Rule::in(array_keys(User::videoAccessOptions()))],
             'student_class' => ['required', 'string'],
             'branch' => ['required', 'string', Rule::in($branches)],
             'academic_year' => ['required', 'string', 'regex:/^\d{4}-\d{4}$/'],
@@ -72,6 +75,7 @@ class StudentManagementController extends Controller
         validator($data, [
             'student_class' => [Rule::in(User::studentClassOptions($data['program_type']))],
         ])->validate();
+        $data['video_accesses'] = User::normalizeVideoAccesses($data['video_accesses'] ?? null, $data['program_type'], $data['student_class']);
 
         $identityChanged = $student->academic_year !== $data['academic_year']
             || $student->program_type !== $data['program_type']
@@ -83,6 +87,7 @@ class StudentManagementController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'program_type' => $data['program_type'],
+            'video_accesses' => $data['video_accesses'],
             'student_class' => $data['student_class'],
             'branch' => $data['branch'],
             'academic_year' => $data['academic_year'],

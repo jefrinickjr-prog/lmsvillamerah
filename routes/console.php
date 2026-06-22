@@ -22,6 +22,13 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         $this->line('Added users.program_type');
     }
 
+    if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'video_accesses')) {
+        Schema::table('users', function (Blueprint $table) {
+            $table->json('video_accesses')->nullable()->after('program_type');
+        });
+        $this->line('Added users.video_accesses');
+    }
+
     if (Schema::hasTable('classrooms') && ! Schema::hasColumn('classrooms', 'program_type')) {
         Schema::table('classrooms', function (Blueprint $table) {
             $table->string('program_type')->default('gambar')->after('id');
@@ -38,6 +45,29 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
 
     if (Schema::hasTable('users') && Schema::hasColumn('users', 'program_type')) {
         DB::table('users')->whereNull('program_type')->orWhere('program_type', '')->update(['program_type' => 'gambar']);
+    }
+
+    if (Schema::hasTable('users') && Schema::hasColumn('users', 'video_accesses')) {
+        DB::table('users')
+            ->where('role', 'student')
+            ->where(function ($query) {
+                $query->whereNull('video_accesses')->orWhere('video_accesses', '');
+            })
+            ->orderBy('id')
+            ->get()
+            ->each(function ($student) {
+                DB::table('users')->where('id', $student->id)->update([
+                    'video_accesses' => json_encode(User::defaultVideoAccesses($student->program_type ?? 'gambar', $student->student_class ?? null)),
+                ]);
+            });
+
+        DB::table('users')
+            ->where('role', 'student')
+            ->whereRaw('LOWER(TRIM(student_class)) = ?', ['sr gold'])
+            ->update([
+                'video_accesses' => json_encode(['gambar', 'skolastik']),
+                'updated_at' => now(),
+            ]);
     }
 
     if (Schema::hasTable('classrooms') && Schema::hasColumn('classrooms', 'program_type')) {

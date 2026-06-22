@@ -28,7 +28,7 @@
               <option value="{{ $value }}" @selected(old('program_type', $material->program_type ?? 'gambar') === $value)>{{ $label }}</option>
             @endforeach
           </select>
-          <p class="mt-2 text-xs font-semibold text-slate-400">Gunakan grup ini agar tutorial gambar dan pengerjaan skolastik terpisah.</p>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Gunakan grup ini agar tutorial gambar dan pembahasan skolastik terpisah.</p>
         </div>
 
         <div>

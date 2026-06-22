@@ -80,13 +80,13 @@ class StudentPageController extends Controller
 
         $studentClass = Auth::user()?->student_class;
         $studentClassKeys = User::studentClassLookupKeys($studentClass);
-        $programType = User::normalizeProgramType(Auth::user()?->program_type);
+        $videoAccesses = Auth::user()?->videoAccesses() ?? [User::normalizeProgramType(Auth::user()?->program_type)];
         $submissions = Submission::where('student_id', Auth::id())->get();
         $attendances = Attendance::where('student_id', Auth::id())->get();
-        $tasksCount = Task::whereHas('material', fn ($query) => $query->where('program_type', $programType))
+        $tasksCount = Task::whereHas('material', fn ($query) => $query->whereIn('program_type', $videoAccesses))
             ->whereHas('material.classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))
             ->count();
-        $materialsCount = Material::where('program_type', $programType)
+        $materialsCount = Material::whereIn('program_type', $videoAccesses)
             ->whereHas('classroom', fn ($query) => $this->classroomTitleQuery($query, $studentClassKeys))
             ->count();
         $submittedCount = $submissions->count();

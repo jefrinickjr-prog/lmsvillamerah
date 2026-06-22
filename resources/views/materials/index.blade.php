@@ -7,6 +7,7 @@
     $canManageMaterials = in_array(auth()->user()?->role, ['teacher', 'admin', 'super_admin'], true);
     $studentClass = auth()->user()?->role === 'student' ? auth()->user()?->student_class : null;
     $selectedProgramType = $selectedProgramType ?? 'gambar';
+    $visibleProgramTypes = $visibleProgramTypes ?? $programTypes;
     $selectedProgramLabel = $programTypes[$selectedProgramType] ?? ($programTypes['gambar'] ?? 'Video Tutorial Gambar');
   @endphp
 
@@ -14,7 +15,7 @@
     <div class="min-w-0">
       <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Video Pembelajaran</p>
       <h2 class="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{{ $selectedProgramLabel }}</h2>
-      <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">Pilih grup video agar tutorial gambar dan pengerjaan skolastik tidak tercampur.</p>
+      <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">Pilih grup video agar tutorial gambar dan pembahasan skolastik tidak tercampur.</p>
       <?php if ($studentClass): ?>
         <p class="mt-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-black text-indigo-700">{{ $studentClass }}</p>
       <?php endif; ?>
@@ -29,17 +30,17 @@
   </div>
 
   <div class="mb-6 grid gap-2 sm:inline-flex sm:flex-wrap">
-    <?php foreach ($programTypes as $value => $label): ?>
+    <?php foreach ($visibleProgramTypes as $value => $label): ?>
       <?php $isActive = $selectedProgramType === $value; ?>
       <?php if ($canManageMaterials): ?>
         <a href="{{ route('materials.index', ['program_type' => $value]) }}" class="inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-2 text-center text-sm font-black {{ $isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' }}">
           {{ $label }}
         </a>
       <?php endif; ?>
-      <?php if (! $canManageMaterials && $isActive): ?>
-        <span class="inline-flex min-h-11 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-2 text-center text-sm font-black text-white shadow-lg shadow-indigo-100">
+      <?php if (! $canManageMaterials): ?>
+        <a href="{{ route('materials.index', ['program_type' => $value]) }}" class="inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-2 text-center text-sm font-black {{ $isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' }}">
           {{ $label }}
-        </span>
+        </a>
       <?php endif; ?>
     <?php endforeach; ?>
   </div>

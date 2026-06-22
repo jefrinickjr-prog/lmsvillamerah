@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'program_type', 'student_class', 'branch', 'academic_year', 'student_code', 'photo_path', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'program_type', 'video_accesses', 'student_class', 'branch', 'academic_year', 'student_code', 'photo_path', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -20,6 +20,11 @@ class User extends Authenticatable
     public const PROGRAM_TYPES = [
         'gambar' => 'Gambar',
         'skolastik' => 'Skolastik',
+    ];
+
+    public const VIDEO_ACCESS_OPTIONS = [
+        'gambar' => 'Video Tutorial Gambar',
+        'skolastik' => 'Video Pembahasan Skolastik',
     ];
 
     public const STUDENT_CLASSES = [
@@ -49,6 +54,11 @@ class User extends Authenticatable
         return self::PROGRAM_TYPES;
     }
 
+    public static function videoAccessOptions(): array
+    {
+        return self::VIDEO_ACCESS_OPTIONS;
+    }
+
     public static function normalizeProgramType(?string $programType): string
     {
         return array_key_exists($programType, self::PROGRAM_TYPES) ? $programType : 'gambar';
@@ -57,6 +67,46 @@ class User extends Authenticatable
     public static function programTypeLabel(?string $programType): string
     {
         return self::PROGRAM_TYPES[self::normalizeProgramType($programType)] ?? self::PROGRAM_TYPES['gambar'];
+    }
+
+    public static function videoAccessLabel(?string $programType): string
+    {
+        return self::VIDEO_ACCESS_OPTIONS[self::normalizeProgramType($programType)] ?? self::VIDEO_ACCESS_OPTIONS['gambar'];
+    }
+
+    public static function defaultVideoAccesses(?string $programType = null, ?string $studentClass = null): array
+    {
+        $studentClass = self::normalizeStudentClass($studentClass);
+
+        if ($studentClass === 'sr gold') {
+            return array_keys(self::VIDEO_ACCESS_OPTIONS);
+        }
+
+        return [self::normalizeProgramType($programType)];
+    }
+
+    public static function normalizeVideoAccesses(mixed $accesses, ?string $programType = null, ?string $studentClass = null): array
+    {
+        if (is_string($accesses)) {
+            $decoded = json_decode($accesses, true);
+            $accesses = is_array($decoded) ? $decoded : [$accesses];
+        }
+
+        if (! is_array($accesses) || $accesses === []) {
+            return self::defaultVideoAccesses($programType, $studentClass);
+        }
+
+        $valid = array_values(array_unique(array_filter(
+            $accesses,
+            fn ($access) => is_string($access) && array_key_exists($access, self::VIDEO_ACCESS_OPTIONS)
+        )));
+
+        return $valid ?: self::defaultVideoAccesses($programType, $studentClass);
+    }
+
+    public function videoAccesses(): array
+    {
+        return self::normalizeVideoAccesses($this->video_accesses ?? null, $this->program_type ?? null, $this->student_class ?? null);
     }
 
     public static function studentClassOptions(?string $programType = null): array
@@ -155,6 +205,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'video_accesses' => 'array',
         ];
     }
 }
