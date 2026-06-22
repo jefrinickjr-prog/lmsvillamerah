@@ -27,7 +27,32 @@
       img, iframe, video { max-width: 100%; }
       .video-frame { aspect-ratio: 16 / 9; }
       button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+      #appShell { min-width: 0; width: 100%; }
       .sidebar-toggle-icon { transition: transform 0.2s ease; }
+      @media (max-width: 1023px) {
+        body.sidebar-open {
+          overflow: hidden;
+          touch-action: none;
+        }
+
+        body.sidebar-open #sidebarBackdrop {
+          display: block;
+        }
+
+        #appSidebar {
+          height: 100vh;
+          height: 100dvh;
+          max-width: calc(100vw - 1.25rem);
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          width: min(21rem, 88vw);
+        }
+
+        #sidebarBackdrop {
+          background: rgb(15 23 42 / 0.55);
+          backdrop-filter: blur(2px);
+        }
+      }
       @media (min-width: 1024px) {
         #appSidebar,
         #appShell,
@@ -160,6 +185,9 @@
                 <div class="text-base font-extrabold tracking-tight">E-Learning</div>
                 <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Bimbingan Gambar</div>
               </div>
+              <button id="sidebarClose" type="button" class="ml-auto grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 lg:hidden" aria-label="Tutup sidebar">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
               <button id="sidebarCollapse" type="button" class="sidebar-toggle ml-auto hidden h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 lg:grid" aria-label="Ciutkan sidebar" aria-pressed="false">
                 <i class="sidebar-toggle-icon fa-solid fa-angles-left"></i>
               </button>
@@ -269,6 +297,7 @@
           const sidebar = document.getElementById('appSidebar');
           const backdrop = document.getElementById('sidebarBackdrop');
           const openButton = document.getElementById('sidebarOpen');
+          const closeButton = document.getElementById('sidebarClose');
           const collapseButton = document.getElementById('sidebarCollapse');
           const notifToggle = document.getElementById('notifToggle');
           const notifMenu = document.getElementById('notifMenu');
@@ -279,6 +308,7 @@
           const closeSidebar = () => {
             sidebar?.classList.add('-translate-x-full');
             backdrop?.classList.add('hidden');
+            document.body.classList.remove('sidebar-open');
           };
 
           const setSidebarCollapsed = (collapsed) => {
@@ -306,9 +336,16 @@
           openButton?.addEventListener('click', () => {
             sidebar?.classList.remove('-translate-x-full');
             backdrop?.classList.remove('hidden');
+            document.body.classList.add('sidebar-open');
           });
 
+          closeButton?.addEventListener('click', closeSidebar);
           backdrop?.addEventListener('click', closeSidebar);
+          window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+              closeSidebar();
+            }
+          });
           notifToggle?.addEventListener('click', () => {
             notifMenu?.classList.toggle('hidden');
             userMenu?.classList.add('hidden');

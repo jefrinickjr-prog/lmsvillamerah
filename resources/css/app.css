@@ -28,6 +28,11 @@ video {
     aspect-ratio: 16 / 9;
 }
 
+#appShell {
+    min-width: 0;
+    width: 100%;
+}
+
 .sidebar-toggle-icon {
     transition: transform 0.2s ease;
 }
@@ -38,6 +43,31 @@ input,
 select,
 textarea {
     -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 1023px) {
+    body.sidebar-open {
+        overflow: hidden;
+        touch-action: none;
+    }
+
+    body.sidebar-open #sidebarBackdrop {
+        display: block;
+    }
+
+    #appSidebar {
+        height: 100vh;
+        height: 100dvh;
+        max-width: calc(100vw - 1.25rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        width: min(21rem, 88vw);
+    }
+
+    #sidebarBackdrop {
+        background: rgb(15 23 42 / 0.55);
+        backdrop-filter: blur(2px);
+    }
 }
 
 @media (min-width: 1024px) {
