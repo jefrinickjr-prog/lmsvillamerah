@@ -33,7 +33,8 @@
         <a href="{{ route('materials.index', ['program_type' => $value]) }}" class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-black {{ $isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' }}">
           {{ $label }}
         </a>
-      @elseif($isActive)
+      @endif
+      @if(! $canManageMaterials && $isActive)
         <span class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-indigo-100">
           {{ $label }}
         </span>
@@ -99,7 +100,8 @@
       <p class="mt-2 text-sm text-slate-500">
         @if(auth()->user()?->role === 'student' && ! $studentClass)
           Akun siswa ini belum memiliki kelas program. Minta admin atau pengajar mengisi kelas siswa terlebih dahulu.
-        @else
+        @endif
+        @if(auth()->user()?->role !== 'student' || $studentClass)
           Video yang dibuat untuk kelas ini akan tampil di halaman ini.
         @endif
       </p>
