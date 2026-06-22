@@ -6,7 +6,8 @@
   @php
     $canManageMaterials = in_array(auth()->user()?->role, ['teacher', 'admin', 'super_admin'], true);
     $studentClass = auth()->user()?->role === 'student' ? auth()->user()?->student_class : null;
-    $selectedProgramLabel = $programTypes[$selectedProgramType ?? 'gambar'] ?? $programTypes['gambar'];
+    $selectedProgramType = $selectedProgramType ?? 'gambar';
+    $selectedProgramLabel = $programTypes[$selectedProgramType] ?? ($programTypes['gambar'] ?? 'Video Tutorial Gambar');
   @endphp
 
   <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
@@ -14,97 +15,104 @@
       <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Video Pembelajaran</p>
       <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">{{ $selectedProgramLabel }}</h2>
       <p class="mt-2 text-slate-500">Pilih grup video agar tutorial gambar dan pengerjaan skolastik tidak tercampur.</p>
-      @if($studentClass)
+      <?php if ($studentClass): ?>
         <p class="mt-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-black text-indigo-700">{{ $studentClass }}</p>
-      @endif
+      <?php endif; ?>
     </div>
-    @if($canManageMaterials)
+
+    <?php if ($canManageMaterials): ?>
       <a href="{{ route('materials.create') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700">
         <i class="fa-solid fa-plus"></i>
         Tambah Video
       </a>
-    @endif
+    <?php endif; ?>
   </div>
 
   <div class="mb-6 flex flex-wrap gap-2">
-    @foreach($programTypes as $value => $label)
-      @php($isActive = ($selectedProgramType ?? 'gambar') === $value)
-      @if($canManageMaterials)
+    <?php foreach ($programTypes as $value => $label): ?>
+      <?php $isActive = $selectedProgramType === $value; ?>
+      <?php if ($canManageMaterials): ?>
         <a href="{{ route('materials.index', ['program_type' => $value]) }}" class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-black {{ $isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' }}">
           {{ $label }}
         </a>
-      @endif
-      @if(! $canManageMaterials && $isActive)
+      <?php endif; ?>
+      <?php if (! $canManageMaterials && $isActive): ?>
         <span class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-indigo-100">
           {{ $label }}
         </span>
-      @endif
-    @endforeach
+      <?php endif; ?>
+    <?php endforeach; ?>
   </div>
 
-  @if($materials->isNotEmpty())
+  <?php if ($materials->isNotEmpty()): ?>
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      @foreach($materials as $material)
-      @php
-        $canManageThisMaterial = in_array(auth()->user()?->role, ['admin', 'super_admin'], true)
-          || (auth()->user()?->role === 'teacher' && $material->classroom?->teacher_id === auth()->id());
-      @endphp
-      <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
-        <div class="flex items-start justify-between gap-4">
-          <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-100 text-indigo-700">
-            <i class="fa-solid fa-circle-play"></i>
-          </div>
-          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">{{ $material->created_at->format('Y-m-d') }}</span>
-        </div>
-        <div class="mt-5 flex flex-wrap items-center gap-2">
-          <h3 class="text-lg font-black text-slate-950">{{ $material->title }}</h3>
-          <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $material->classroom->title ?? 'Kelas' }}</span>
-          <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">{{ $programTypes[$material->program_type ?? 'gambar'] ?? $programTypes['gambar'] }}</span>
-        </div>
-        <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ \Illuminate\Support\Str::limit($material->content, 120) }}</p>
-        @if($material->youtube_embed_url)
-          <div class="mt-5 overflow-hidden rounded-2xl bg-slate-100">
-            <iframe class="aspect-video w-full" src="{{ $material->youtube_embed_url }}" title="Video pembelajaran {{ $material->title }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-          </div>
-        @endif
-        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="text-sm font-black text-indigo-600">Video pembelajaran</div>
-          @if($canManageThisMaterial)
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <a href="{{ route('materials.edit', $material) }}" class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
-                <i class="fa-solid fa-pen-to-square"></i>
-                Edit
-              </a>
-              <form method="POST" action="{{ route('materials.destroy', $material) }}" onsubmit="return confirm('Hapus video pembelajaran ini? Tugas yang terkait video ini juga akan terhapus.');">
-                @csrf
-                @method('DELETE')
-                <button class="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-100" type="submit">
-                  <i class="fa-solid fa-trash"></i>
-                  Hapus
-                </button>
-              </form>
-            </div>
-          @endif
-        </div>
-      </article>
-      @endforeach
-    </div>
-  @endif
+      <?php foreach ($materials as $material): ?>
+        <?php
+          $canManageThisMaterial = in_array(auth()->user()?->role, ['admin', 'super_admin'], true)
+            || (auth()->user()?->role === 'teacher' && $material->classroom?->teacher_id === auth()->id());
+          $materialGroup = $programTypes[$material->program_type ?? 'gambar'] ?? ($programTypes['gambar'] ?? 'Video Tutorial Gambar');
+        ?>
 
-  @if($materials->isEmpty())
+        <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
+          <div class="flex items-start justify-between gap-4">
+            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-100 text-indigo-700">
+              <i class="fa-solid fa-circle-play"></i>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">{{ $material->created_at->format('Y-m-d') }}</span>
+          </div>
+
+          <div class="mt-5 flex flex-wrap items-center gap-2">
+            <h3 class="text-lg font-black text-slate-950">{{ $material->title }}</h3>
+            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $material->classroom->title ?? 'Kelas' }}</span>
+            <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">{{ $materialGroup }}</span>
+          </div>
+
+          <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ \Illuminate\Support\Str::limit($material->content, 120) }}</p>
+
+          <?php if ($material->youtube_embed_url): ?>
+            <div class="mt-5 overflow-hidden rounded-2xl bg-slate-100">
+              <iframe class="aspect-video w-full" src="{{ $material->youtube_embed_url }}" title="Video pembelajaran {{ $material->title }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+          <?php endif; ?>
+
+          <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm font-black text-indigo-600">Video pembelajaran</div>
+            <?php if ($canManageThisMaterial): ?>
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <a href="{{ route('materials.edit', $material) }}" class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  Edit
+                </a>
+                <form method="POST" action="{{ route('materials.destroy', $material) }}" onsubmit="return confirm('Hapus video pembelajaran ini? Tugas yang terkait video ini juga akan terhapus.');">
+                  @csrf
+                  @method('DELETE')
+                  <button class="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-100" type="submit">
+                    <i class="fa-solid fa-trash"></i>
+                    Hapus
+                  </button>
+                </form>
+              </div>
+            <?php endif; ?>
+          </div>
+        </article>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+
+  <?php if ($materials->isEmpty()): ?>
     <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
       <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
         <i class="fa-regular fa-folder-open"></i>
       </div>
       <h3 class="mt-4 font-black text-slate-900">Belum ada video pembelajaran</h3>
       <p class="mt-2 text-sm text-slate-500">
-        @if(auth()->user()?->role === 'student' && ! $studentClass)
+        <?php if (auth()->user()?->role === 'student' && ! $studentClass): ?>
           Akun siswa ini belum memiliki kelas program. Minta admin atau pengajar mengisi kelas siswa terlebih dahulu.
-        @endif
-        @if(auth()->user()?->role !== 'student' || $studentClass)
+        <?php endif; ?>
+        <?php if (auth()->user()?->role !== 'student' || $studentClass): ?>
           Video yang dibuat untuk kelas ini akan tampil di halaman ini.
-        @endif
+        <?php endif; ?>
       </p>
     </div>
-  @endif
+  <?php endif; ?>
 @endsection
