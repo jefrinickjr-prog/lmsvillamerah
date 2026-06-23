@@ -12,6 +12,43 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Artisan::command('lms:create-super-admin {email} {password} {--name=Super Admin}', function (string $email, string $password) {
+    if (! Schema::hasTable('users')) {
+        $this->error('Table users belum ada. Jalankan migrate terlebih dahulu.');
+
+        return self::FAILURE;
+    }
+
+    $payload = [
+        'name' => (string) $this->option('name'),
+        'password' => Hash::make($password),
+        'role' => 'super_admin',
+        'program_type' => 'gambar',
+        'email_verified_at' => now(),
+        'approved_at' => Schema::hasColumn('users', 'approved_at') ? now() : null,
+        'updated_at' => now(),
+    ];
+
+    if (! Schema::hasColumn('users', 'approved_at')) {
+        unset($payload['approved_at']);
+    }
+
+    if (Schema::hasColumn('users', 'video_accesses')) {
+        $payload['video_accesses'] = json_encode(['gambar', 'skolastik']);
+    }
+
+    $exists = User::where('email', $email)->exists();
+
+    User::updateOrCreate(
+        ['email' => $email],
+        $payload + ['created_at' => now()]
+    );
+
+    $this->info(($exists ? 'Updated' : 'Created').' super admin: '.$email);
+
+    return self::SUCCESS;
+})->purpose('Create or update a full-access super admin account');
+
 Artisan::command('lms:repair-production {--seed-defaults : Create default admin and base classrooms when missing}', function () {
     $this->info('Repairing LMS production schema and data...');
 
@@ -145,6 +182,31 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
             ]);
     }
 
+    if (Schema::hasTable('users')) {
+        $superAdminData = [
+            'name' => 'Super Admin',
+            'password' => Hash::make('spadmin123'),
+            'role' => 'super_admin',
+            'program_type' => 'gambar',
+            'email_verified_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        if (Schema::hasColumn('users', 'video_accesses')) {
+            $superAdminData['video_accesses'] = json_encode(['gambar', 'skolastik']);
+        }
+
+        if (Schema::hasColumn('users', 'approved_at')) {
+            $superAdminData['approved_at'] = now();
+        }
+
+        DB::table('users')->updateOrInsert(
+            ['email' => 'spadmin@vilmer.com'],
+            $superAdminData + ['created_at' => now()]
+        );
+        $this->line('Ensured super admin: spadmin@vilmer.com / spadmin123');
+    }
+
     if ($addedAdminApproval && Schema::hasTable('users') && Schema::hasColumn('users', 'approved_at')) {
         DB::table('users')
             ->whereIn('role', ['admin', 'super_admin'])
@@ -162,16 +224,24 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
 
     if (
         Schema::hasTable('materials')
-        && Schema::hasTable('classrooms')
         && Schema::hasColumn('materials', 'program_type')
-        && Schema::hasColumn('classrooms', 'program_type')
     ) {
         DB::table('materials')
-            ->leftJoin('classrooms', 'materials.classroom_id', '=', 'classrooms.id')
-            ->whereNotNull('classrooms.program_type')
-            ->update(['materials.program_type' => DB::raw('classrooms.program_type')]);
+            ->where(function ($query) {
+                $query->whereNull('program_type')->orWhere('program_type', '');
+            })
+            ->update(['program_type' => 'gambar']);
 
-        DB::table('materials')->whereNull('program_type')->orWhere('program_type', '')->update(['program_type' => 'gambar']);
+        DB::table('materials')
+            ->where(function ($query) {
+                $query
+                    ->whereRaw('LOWER(title) LIKE ?', ['%skolastik%'])
+                    ->orWhereRaw('LOWER(content) LIKE ?', ['%skolastik%']);
+            })
+            ->update([
+                'program_type' => 'skolastik',
+                'updated_at' => now(),
+            ]);
     }
 
     if (
