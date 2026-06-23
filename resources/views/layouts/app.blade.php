@@ -29,6 +29,54 @@
       button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
       #appShell { min-width: 0; width: 100%; }
       .sidebar-toggle-icon { transition: transform 0.2s ease; }
+      .btn-action {
+        align-items: center;
+        border: 0;
+        box-shadow: 0 12px 24px rgb(79 70 229 / 0.22);
+        cursor: pointer;
+        display: inline-flex;
+        font-weight: 900;
+        gap: 0.5rem;
+        justify-content: center;
+        line-height: 1;
+        min-height: 2.75rem;
+        text-decoration: none;
+        transform: translateY(0);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+      }
+      .btn-action:hover {
+        box-shadow: 0 18px 34px rgb(15 23 42 / 0.18);
+        filter: brightness(1.04);
+        transform: translateY(-2px);
+      }
+      .btn-action:active {
+        transform: translateY(0);
+      }
+      .btn-action:focus-visible {
+        outline: 3px solid rgb(129 140 248 / 0.45);
+        outline-offset: 3px;
+      }
+      .btn-primary-solid {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: #fff !important;
+      }
+      .btn-approve-solid {
+        background: linear-gradient(135deg, #059669, #10b981);
+        color: #fff !important;
+      }
+      .btn-download-solid {
+        background: linear-gradient(135deg, #e11d48, #f43f5e);
+        color: #fff !important;
+      }
+      .btn-link-strong {
+        color: #4f46e5 !important;
+        font-weight: 900;
+        transition: color 0.18s ease, transform 0.18s ease;
+      }
+      .btn-link-strong:hover {
+        color: #312e81 !important;
+        transform: translateX(2px);
+      }
       @media (max-width: 1023px) {
         body.sidebar-open {
           overflow: hidden;

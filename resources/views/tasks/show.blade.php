@@ -16,7 +16,7 @@
 
   <div class="mx-auto max-w-5xl">
     <div class="mb-6">
-      <a href="{{ route('tasks.index') }}" class="inline-flex items-center gap-2 text-sm font-black text-indigo-600">
+      <a href="{{ route('tasks.index') }}" class="btn-link-strong inline-flex items-center gap-2 text-sm">
         <i class="fa-solid fa-arrow-left text-xs"></i>
         Kembali ke tugas
       </a>
@@ -49,8 +49,8 @@
                   <div class="text-xs font-semibold text-slate-500">Buka modul atau lembar soal.</div>
                 </div>
               </div>
-              <a href="{{ route('tasks.attachment', $task) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-black text-white">
-                Download PDF
+              <a href="{{ route('tasks.attachment', $task) }}" class="btn-action btn-download-solid rounded-2xl px-4 py-3 text-sm">
+                Unduh PDF
                 <i class="fa-solid fa-download text-xs"></i>
               </a>
             </div>
@@ -89,7 +89,7 @@
             @endforelse
           </div>
           @if($isStudent && ! empty($questions))
-            <button class="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100" type="submit">
+            <button class="btn-action btn-primary-solid mt-5 rounded-2xl px-5 py-3 text-sm" type="submit">
               <i class="fa-solid fa-paper-plane"></i>
               Kirim Jawaban
             </button>

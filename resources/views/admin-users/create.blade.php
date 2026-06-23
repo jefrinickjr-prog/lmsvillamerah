@@ -44,11 +44,11 @@
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row">
-          <button class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700" type="submit">
+          <button class="btn-action btn-primary-solid rounded-2xl px-5 py-3 text-sm" type="submit">
             <i class="fa-solid fa-user-shield"></i>
             Buat Admin Pending
           </button>
-          <a href="{{ route('admin-users.index') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50">
+          <a href="{{ route('admin-users.index') }}" class="btn-action rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50">
             Kembali
           </a>
         </div>

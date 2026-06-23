@@ -10,7 +10,7 @@
       <p class="mt-2 text-slate-500">Daftarkan admin baru, lalu setujui agar akun mendapatkan akses penuh ke dashboard admin.</p>
     </div>
 
-    <a href="{{ route('admin-users.create') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700">
+    <a href="{{ route('admin-users.create') }}" class="btn-action btn-primary-solid rounded-2xl px-5 py-3 text-sm">
       <i class="fa-solid fa-user-plus"></i>
       Tambah Admin
     </a>
@@ -52,7 +52,7 @@
                   <form method="POST" action="{{ route('admin-users.approve', $admin) }}">
                     @csrf
                     @method('PUT')
-                    <button class="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700" type="submit">
+                    <button class="btn-action btn-approve-solid rounded-2xl px-4 py-2 text-xs" type="submit">
                       <i class="fa-solid fa-check"></i>
                       Setujui
                     </button>

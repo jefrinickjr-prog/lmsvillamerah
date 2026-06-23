@@ -5,7 +5,7 @@
 @section('content')
   <div class="mx-auto max-w-3xl">
     <div class="mb-6">
-      <a href="{{ route('tasks.index') }}" class="inline-flex items-center gap-2 text-sm font-black text-indigo-600">
+      <a href="{{ route('tasks.index') }}" class="btn-link-strong inline-flex items-center gap-2 text-sm">
         <i class="fa-solid fa-arrow-left text-xs"></i>
         Kembali ke tugas
       </a>
@@ -118,7 +118,7 @@
             @endfor
           </div>
         </section>
-        <button class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none" type="submit" @disabled($classrooms->isEmpty())>
+        <button class="btn-action btn-primary-solid rounded-2xl px-5 py-3 text-sm disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none" type="submit" @disabled($classrooms->isEmpty())>
           <i class="fa-solid fa-save"></i>
           Simpan Tugas
         </button>
