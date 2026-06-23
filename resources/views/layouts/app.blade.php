@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'E-Learning Gambar')</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/villa-merah-logo.svg') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/villa-merah-logo.svg') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/vm-logo-512.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/vm-logo-512.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     @php
@@ -38,9 +38,9 @@
         width: 100%;
       }
       .brand-logo-shell {
-        background: #fff;
-        box-shadow: 0 12px 28px rgb(239 29 45 / 0.2);
-        overflow: hidden;
+        background: transparent;
+        box-shadow: 0 12px 28px rgb(239 29 45 / 0.16);
+        overflow: visible;
       }
       .btn-action {
         align-items: center;
@@ -271,8 +271,8 @@
         <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white shadow-xl transition-all duration-200 lg:translate-x-0 lg:shadow-none">
           <div class="relative flex h-full flex-col">
             <div class="sidebar-brand flex h-20 items-center gap-3 border-b border-slate-100 px-6">
-              <div class="brand-logo-shell grid h-12 w-12 shrink-0 place-items-center rounded-2xl">
-                <img src="{{ asset('images/villa-merah-logo.svg') }}" alt="Logo Villa Merah" class="brand-logo h-11 w-11">
+              <div class="brand-logo-shell grid h-12 w-12 shrink-0 place-items-center">
+                <img src="{{ asset('images/vm-logo-512.png') }}" alt="Logo Villa Merah" class="brand-logo h-12 w-12">
               </div>
               <div class="sidebar-label min-w-0">
                 <div class="text-base font-extrabold tracking-tight">E-Learning</div>

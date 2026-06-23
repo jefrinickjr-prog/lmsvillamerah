@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Login - E-Learning Villa Merah</title>
-  <link rel="icon" type="image/svg+xml" href="{{ asset('images/villa-merah-logo.svg') }}">
-  <link rel="apple-touch-icon" href="{{ asset('images/villa-merah-logo.svg') }}">
+  <link rel="icon" type="image/png" href="{{ asset('images/vm-logo-512.png') }}">
+  <link rel="apple-touch-icon" href="{{ asset('images/vm-logo-512.png') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -81,9 +81,9 @@
       display: grid;
       place-items: center;
       margin: 0 auto 22px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: #fff;
+      overflow: visible;
+      border-radius: 0;
+      background: transparent;
       box-shadow: 0 18px 38px rgba(239, 29, 45, .28);
     }
 
@@ -504,7 +504,7 @@
       <div class="auth-form-panel">
         <div class="auth-form">
           <div class="brand-mark">
-            <img src="{{ asset('images/villa-merah-logo.svg') }}" alt="Logo Villa Merah">
+            <img src="{{ asset('images/vm-logo-512.png') }}" alt="Logo Villa Merah">
           </div>
           <h1 class="auth-title">Masuk Kelas</h1>
           <p class="auth-subtitle">Lanjutkan belajar menggambar, tonton video pembelajaran terbaru, dan kumpulkan tugas dari satu ruang belajar.</p>
@@ -572,7 +572,7 @@
               </div>
               <div class="course-body">
                 <div class="course-hero">
-                  <img src="{{ asset('images/villa-merah-logo.svg') }}" alt="Logo Villa Merah" class="course-logo">
+                  <img src="{{ asset('images/vm-logo-512.png') }}" alt="Logo Villa Merah" class="course-logo">
                 </div>
                 <div class="course-line"></div>
                 <div class="course-line short"></div>
