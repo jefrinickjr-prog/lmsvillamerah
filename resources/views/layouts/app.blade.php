@@ -81,6 +81,10 @@
         background: linear-gradient(135deg, #e11d48, #f43f5e);
         color: #fff !important;
       }
+      .btn-danger-solid {
+        background: linear-gradient(135deg, #dc2626, #f43f5e);
+        color: #fff !important;
+      }
       .btn-link-strong {
         color: #4f46e5 !important;
         font-weight: 900;

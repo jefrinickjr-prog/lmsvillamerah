@@ -67,7 +67,7 @@
             <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Hapus tugas ini? Jawaban siswa untuk tugas ini juga akan terhapus.');">
               @csrf
               @method('DELETE')
-              <button class="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-rose-100 transition hover:-translate-y-0.5 hover:bg-rose-700 hover:shadow-xl" type="submit">
+              <button class="btn-action btn-danger-solid min-h-10 rounded-2xl px-4 py-2 text-xs" type="submit">
                 <i class="fa-solid fa-trash"></i>
                 Hapus
               </button>
