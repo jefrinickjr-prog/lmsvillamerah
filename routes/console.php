@@ -133,6 +133,13 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         $this->line('Added tasks.questions');
     }
 
+    if (Schema::hasTable('tasks') && ! Schema::hasColumn('tasks', 'duration_minutes')) {
+        Schema::table('tasks', function (Blueprint $table) {
+            $table->unsignedSmallInteger('duration_minutes')->nullable()->after('due_at');
+        });
+        $this->line('Added tasks.duration_minutes');
+    }
+
     if (
         Schema::hasTable('classrooms')
         && Schema::hasTable('tasks')
@@ -153,6 +160,20 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
             $table->json('answers')->nullable()->after('content');
         });
         $this->line('Added submissions.answers');
+    }
+
+    if (Schema::hasTable('submissions') && ! Schema::hasColumn('submissions', 'started_at')) {
+        Schema::table('submissions', function (Blueprint $table) {
+            $table->timestamp('started_at')->nullable()->after('answers');
+        });
+        $this->line('Added submissions.started_at');
+    }
+
+    if (Schema::hasTable('submissions') && ! Schema::hasColumn('submissions', 'submitted_at')) {
+        Schema::table('submissions', function (Blueprint $table) {
+            $table->timestamp('submitted_at')->nullable()->after('started_at');
+        });
+        $this->line('Added submissions.submitted_at');
     }
 
     if (Schema::hasTable('users') && Schema::hasColumn('users', 'program_type')) {

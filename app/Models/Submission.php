@@ -9,7 +9,7 @@ class Submission extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['task_id', 'student_id', 'content', 'answers', 'attachment', 'score'];
+    protected $fillable = ['task_id', 'student_id', 'content', 'answers', 'started_at', 'submitted_at', 'attachment', 'score'];
 
     public function task()
     {
@@ -25,6 +25,8 @@ class Submission extends Model
     {
         return [
             'answers' => 'array',
+            'started_at' => 'datetime',
+            'submitted_at' => 'datetime',
         ];
     }
 }

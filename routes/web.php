@@ -47,7 +47,7 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::resource('materials', MaterialController::class)->only(['index','create','store','edit','update','destroy']);
     Route::get('tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');
     Route::post('tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
-    Route::resource('tasks', TaskController::class)->only(['index','show','create','store']);
+    Route::resource('tasks', TaskController::class)->only(['index','show','create','store','edit','update','destroy']);
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');

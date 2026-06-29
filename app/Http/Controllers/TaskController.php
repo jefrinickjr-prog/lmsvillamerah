@@ -53,16 +53,78 @@ class TaskController extends Controller
 
         $videos = $this->availableVideos();
         $classrooms = $this->availableClassrooms();
-
         $taskTypes = Task::typeOptions();
+        $task = null;
 
-        return view('tasks.create', compact('videos', 'classrooms', 'taskTypes'));
+        return view('tasks.create', compact('videos', 'classrooms', 'taskTypes', 'task'));
     }
 
     public function store(Request $request)
     {
         abort_unless($this->canManageTasks(), 403);
 
+        [$data, $classroomIds] = $this->validatedTaskData($request);
+
+        if ($request->hasFile('attachment')) {
+            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'public');
+        }
+
+        $task = Task::create($data);
+        $task->classrooms()->sync($classroomIds);
+        return redirect()->route('tasks.index')->with('success', 'Tugas berhasil dibuat');
+    }
+
+    public function edit(Task $task)
+    {
+        abort_unless($this->canManageTask($task), 403);
+
+        $task->load(['classrooms', 'material.classroom', 'material.classrooms']);
+        $videos = $this->availableVideos();
+        $classrooms = $this->availableClassrooms();
+        $taskTypes = Task::typeOptions();
+
+        return view('tasks.create', compact('task', 'videos', 'classrooms', 'taskTypes'));
+    }
+
+    public function update(Request $request, Task $task)
+    {
+        abort_unless($this->canManageTask($task), 403);
+
+        [$data, $classroomIds] = $this->validatedTaskData($request, $task);
+
+        if ($request->boolean('remove_attachment') && $task->attachment_path) {
+            Storage::disk('public')->delete($task->attachment_path);
+            $data['attachment_path'] = null;
+        }
+
+        if ($request->hasFile('attachment')) {
+            if ($task->attachment_path) {
+                Storage::disk('public')->delete($task->attachment_path);
+            }
+            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'public');
+        }
+
+        $task->update($data);
+        $task->classrooms()->sync($classroomIds);
+
+        return redirect()->route('tasks.show', $task)->with('success', 'Tugas berhasil diperbarui.');
+    }
+
+    public function destroy(Task $task)
+    {
+        abort_unless($this->canManageTask($task), 403);
+
+        if ($task->attachment_path) {
+            Storage::disk('public')->delete($task->attachment_path);
+        }
+
+        $task->delete();
+
+        return redirect()->route('tasks.index')->with('success', 'Tugas berhasil dihapus.');
+    }
+
+    private function validatedTaskData(Request $request, ?Task $task = null): array
+    {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -71,7 +133,9 @@ class TaskController extends Controller
             'classroom_ids.*' => ['integer', 'exists:classrooms,id'],
             'task_type' => ['nullable', 'string', Rule::in(array_keys(Task::typeOptions()))],
             'due_at' => ['nullable', 'date'],
+            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'remove_attachment' => ['nullable', 'boolean'],
             'questions' => ['nullable', 'array', 'max:20'],
             'questions.*.prompt' => ['nullable', 'string'],
             'questions.*.type' => ['nullable', 'string', Rule::in(['essay', 'multiple_choice', 'questionnaire'])],
@@ -101,18 +165,15 @@ class TaskController extends Controller
         }
 
         $data['task_type'] = $data['task_type'] ?? 'assignment';
-
-        if ($request->hasFile('attachment')) {
-            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'public');
-        }
+        $data['duration_minutes'] = $data['duration_minutes'] ?? null;
 
         $data['questions'] = $this->normalizedQuestions($data['questions'] ?? []);
         $data['material_id'] = $data['material_id'] ?? null;
         unset($data['classroom_ids']);
+        unset($data['attachment']);
+        unset($data['remove_attachment']);
 
-        $task = Task::create($data);
-        $task->classrooms()->sync($classroomIds);
-        return redirect()->route('tasks.index')->with('success', 'Tugas berhasil dibuat');
+        return [$data, $classroomIds];
     }
 
     public function show(Task $task)
@@ -120,9 +181,24 @@ class TaskController extends Controller
         abort_unless($this->canViewTask($task), 403);
 
         $task->load(['classrooms', 'material.classroom', 'material.classrooms']);
-        $submission = Auth::user()?->role === 'student'
-            ? Submission::where('task_id', $task->id)->where('student_id', Auth::id())->first()
-            : null;
+        $submission = null;
+
+        if (Auth::user()?->role === 'student') {
+            $submission = Submission::firstOrCreate(
+                [
+                    'task_id' => $task->id,
+                    'student_id' => Auth::id(),
+                ],
+                [
+                    'answers' => [],
+                    'started_at' => now(),
+                ]
+            );
+
+            if ($submission->started_at === null) {
+                $submission->forceFill(['started_at' => now()])->save();
+            }
+        }
 
         return view('tasks.show', compact('task', 'submission'));
     }
@@ -144,16 +220,22 @@ class TaskController extends Controller
             'content' => ['nullable', 'string'],
         ]);
 
-        Submission::updateOrCreate(
+        $submission = Submission::firstOrNew(
             [
                 'task_id' => $task->id,
                 'student_id' => Auth::id(),
-            ],
-            [
-                'answers' => $data['answers'] ?? [],
-                'content' => $data['content'] ?? null,
             ]
         );
+
+        if ($submission->exists && $submission->submitted_at) {
+            return redirect()->route('tasks.show', $task)->withErrors(['answers' => 'Jawaban sudah dikirim dan tidak bisa diubah.']);
+        }
+
+        $submission->started_at ??= now();
+        $submission->answers = $data['answers'] ?? [];
+        $submission->content = $data['content'] ?? null;
+        $submission->submitted_at = now();
+        $submission->save();
 
         return redirect()->route('tasks.show', $task)->with('success', 'Jawaban berhasil dikirim.');
     }
@@ -161,6 +243,23 @@ class TaskController extends Controller
     private function canManageTasks(): bool
     {
         return in_array(Auth::user()?->role, ['teacher', 'admin', 'super_admin'], true);
+    }
+
+    private function canManageTask(Task $task): bool
+    {
+        if (! $this->canManageTasks()) {
+            return false;
+        }
+
+        if (in_array(Auth::user()?->role, ['admin', 'super_admin'], true)) {
+            return true;
+        }
+
+        $task->loadMissing(['classrooms', 'material.classroom', 'material.classrooms']);
+
+        return $task->classrooms->contains('teacher_id', Auth::id())
+            || $task->material?->classrooms?->contains('teacher_id', Auth::id())
+            || $task->material?->classroom?->teacher_id === Auth::id();
     }
 
     private function canViewTask(Task $task): bool

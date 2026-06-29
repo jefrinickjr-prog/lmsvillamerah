@@ -9,10 +9,11 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['material_id', 'task_type', 'title', 'description', 'attachment_path', 'questions', 'due_at'];
+    protected $fillable = ['material_id', 'task_type', 'title', 'description', 'attachment_path', 'questions', 'due_at', 'duration_minutes'];
 
     public const TYPES = [
         'assignment' => 'Tugas Upload / Instruksi',
+        'practice' => 'Latihan Soal',
         'essay' => 'Pembelajaran Esai',
         'multiple_choice' => 'Pilihan Ganda',
         'questionnaire' => 'Kuesioner',
@@ -48,6 +49,7 @@ class Task extends Model
         return [
             'due_at' => 'datetime',
             'questions' => 'array',
+            'duration_minutes' => 'integer',
         ];
     }
 }
