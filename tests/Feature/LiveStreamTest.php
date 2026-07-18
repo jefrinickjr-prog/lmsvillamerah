@@ -30,6 +30,18 @@ class LiveStreamTest extends TestCase
         $this->actingAs($student)->post(route('live-streams.join', $session))->assertForbidden();
     }
 
+    public function test_legacy_siswa_role_sees_join_button_and_can_join(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $student->forceFill(['role' => 'siswa'])->save();
+
+        $this->actingAs($student)->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Join Live Streaming');
+        $this->actingAs($student)->post(route('live-streams.join', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+    }
+
     public function test_live_stream_rejects_participant_number_twenty_one(): void
     {
         [$student, $session] = $this->makeSession();

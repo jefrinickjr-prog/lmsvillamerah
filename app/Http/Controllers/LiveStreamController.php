@@ -24,7 +24,7 @@ class LiveStreamController extends Controller
 
         if ($user->role === 'teacher') {
             $query->whereHas('classroom', fn ($q) => $q->where('teacher_id', $user->id));
-        } elseif ($user->role === 'student') {
+        } elseif ($this->isStudentRole($user->role)) {
             if (($user->delivery_mode ?? 'offline') !== 'online') {
                 $query->whereRaw('1 = 0');
             }
@@ -111,7 +111,7 @@ class LiveStreamController extends Controller
 
     public function join(LiveStreamSession $liveStream)
     {
-        abort_unless(Auth::user()?->role === 'student', 403);
+        abort_unless($this->isStudentRole(Auth::user()?->role), 403);
         abort_unless($this->studentCanAccess($liveStream->classroom), 403);
         abort_unless($liveStream->started_at, 403, 'Live streaming belum dimulai oleh pengajar.');
         abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
@@ -132,7 +132,7 @@ class LiveStreamController extends Controller
     {
         $isHost = (int) $liveStream->started_by === Auth::id();
         $isManager = $this->canManage($liveStream->classroom);
-        $isParticipant = Auth::user()?->role === 'student'
+        $isParticipant = $this->isStudentRole(Auth::user()?->role)
             && $this->studentCanAccess($liveStream->classroom)
             && $liveStream->participants()->whereKey(Auth::id())->exists();
         abort_unless($isManager || $isParticipant, 403);
@@ -186,6 +186,11 @@ class LiveStreamController extends Controller
     private function isManager(): bool
     {
         return in_array(Auth::user()?->role, ['teacher', 'admin', 'super_admin'], true);
+    }
+
+    private function isStudentRole(?string $role): bool
+    {
+        return in_array(strtolower(trim((string) $role)), ['student', 'siswa'], true);
     }
 
     private function canManage(Classroom $classroom): bool
