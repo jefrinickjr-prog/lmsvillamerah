@@ -17,7 +17,7 @@ class LiveStreamTest extends TestCase
         [$student, $session] = $this->makeSession();
 
         $this->actingAs($student)->post(route('live-streams.join', $session))
-            ->assertRedirect('https://meet.google.com/abc-defg-hij');
+            ->assertRedirect(route('live-streams.room', $session));
 
         $this->assertDatabaseHas('live_stream_participants', ['live_stream_session_id' => $session->id, 'user_id' => $student->id]);
     }
@@ -55,17 +55,19 @@ class LiveStreamTest extends TestCase
 
         $session->refresh();
         $this->assertSame('Live yang diperbarui', $session->title);
+        $session->update(['started_at' => null, 'started_by' => null]);
         $this->actingAs($admin)->post(route('live-streams.start', $session))
-            ->assertRedirect('https://zoom.us/j/123456789');
-        $this->assertTrue($session->fresh()->starts_at->lte(now()));
+            ->assertRedirect(route('live-streams.room', $session));
+        $this->assertTrue($session->fresh()->started_at->lte(now()));
+        $this->assertSame($admin->id, $session->fresh()->started_by);
     }
 
     private function makeSession(): array
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
-        $student = User::factory()->create(['role' => 'student', 'program_type' => 'gambar', 'student_class' => 'SR Gold', 'branch' => 'Bandung']);
+        $student = User::factory()->create(['role' => 'student', 'program_type' => 'gambar', 'delivery_mode' => 'online', 'student_class' => 'SR Gold', 'branch' => 'Bandung']);
         $classroom = Classroom::create(['program_type' => 'gambar', 'delivery_mode' => 'online', 'title' => 'SR Gold', 'branch' => 'Bandung', 'teacher_id' => $teacher->id]);
-        $session = LiveStreamSession::create(['classroom_id' => $classroom->id, 'title' => 'Live', 'meeting_url' => 'https://meet.google.com/abc-defg-hij', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour()]);
+        $session = LiveStreamSession::create(['classroom_id' => $classroom->id, 'title' => 'Live', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'started_at' => now(), 'started_by' => $teacher->id]);
 
         return [$student, $session];
     }

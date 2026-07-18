@@ -18,6 +18,14 @@
 
       <div class="space-y-5">
         <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Jenis Pembelajaran</label>
+          <select name="delivery_mode" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
+            <option value="offline" @selected(old('delivery_mode', 'offline') === 'offline')>Tatap Muka / Offline</option>
+            <option value="online" @selected(old('delivery_mode') === 'online')>Live Streaming / Online</option>
+          </select>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Hanya siswa Live Streaming yang memperoleh akses ke ruang Zoom/Google Meet.</p>
+        </div>
+        <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Nama Siswa</label>
           <input name="name" value="{{ old('name') }}" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required autofocus>
         </div>

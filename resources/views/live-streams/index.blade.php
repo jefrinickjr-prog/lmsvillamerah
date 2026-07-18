@@ -6,7 +6,7 @@
   <div class="mb-6">
     <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Kelas Online</p>
     <h2 class="mt-1 text-3xl font-black text-slate-950">Live Streaming</h2>
-    <p class="mt-2 text-slate-500">Ruang Zoom/Google Meet dibatasi maksimal 20 peserta dan hanya tersedia bagi siswa kelas online yang sesuai.</p>
+    <p class="mt-2 text-slate-500">Live berlangsung langsung di aplikasi, dibatasi maksimal 20 peserta, dan hanya tersedia bagi siswa kelas online yang sesuai.</p>
   </div>
 
   @if($errors->any())
@@ -23,7 +23,6 @@
         <div class="grid gap-4 md:grid-cols-2">
           <div><label class="mb-2 block text-sm font-bold">Kelas Online</label><select name="classroom_id" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"><option value="">Pilih kelas</option>@foreach($classrooms as $classroom)<option value="{{ $classroom->id }}" @selected(old('classroom_id') == $classroom->id)>{{ $classroom->title }} · {{ $classroom->branch }}</option>@endforeach</select></div>
           <div><label class="mb-2 block text-sm font-bold">Judul Sesi</label><input name="title" value="{{ old('title') }}" required maxlength="255" class="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Contoh: Pembahasan Perspektif"></div>
-          <div class="md:col-span-2"><label class="mb-2 block text-sm font-bold">Link Zoom / Google Meet</label><input type="url" name="meeting_url" value="{{ old('meeting_url') }}" required class="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="https://meet.google.com/... atau https://zoom.us/..."></div>
           <div><label class="mb-2 block text-sm font-bold">Mulai</label><input type="datetime-local" name="starts_at" value="{{ old('starts_at') }}" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"></div>
           <div><label class="mb-2 block text-sm font-bold">Selesai</label><input type="datetime-local" name="ends_at" value="{{ old('ends_at') }}" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"></div>
         </div>
@@ -34,17 +33,17 @@
 
   <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     @forelse($sessions as $session)
-      @php $ended = now()->gt($session->ends_at); $notOpen = now()->lt($session->starts_at->copy()->subMinutes(15)); @endphp
+      @php $ended = now()->gt($session->ends_at); $notOpen = ! $session->started_at; $full = $session->participants_count >= 20 && ! $session->current_user_joined; @endphp
       <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
         <div class="flex items-start justify-between gap-3"><div class="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-rose-600"><i class="fa-solid fa-video"></i></div><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $session->participants_count }}/20 peserta</span></div>
         <h3 class="mt-5 text-lg font-black">{{ $session->title }}</h3>
         <p class="mt-1 text-sm font-bold text-indigo-600">{{ $session->classroom->title }} · {{ $session->classroom->branch }}</p>
         <div class="mt-4 space-y-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"><div><i class="fa-regular fa-calendar mr-2"></i>{{ $session->starts_at->format('d M Y') }}</div><div><i class="fa-regular fa-clock mr-2"></i>{{ $session->starts_at->format('H:i') }}–{{ $session->ends_at->format('H:i') }} WIB</div></div>
         @if(auth()->user()->role === 'student')
-          <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">@csrf<button type="submit" @disabled($ended || $notOpen || $session->participants_count >= 20) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended || $notOpen || $session->participants_count >= 20 ? 'cursor-not-allowed bg-slate-300' : 'bg-rose-600 hover:bg-rose-700' }}">{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Belum Dibuka' : ($session->participants_count >= 20 ? 'Ruang Penuh' : 'Masuk Live Streaming')) }}</button></form>
+          <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">@csrf<button type="submit" @disabled($ended || $notOpen || $full) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended || $notOpen || $full ? 'cursor-not-allowed bg-slate-300' : 'bg-rose-600 hover:bg-rose-700' }}">{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Masuk Kembali ke Live' : 'Join Live Streaming'))) }}</button></form>
         @else
           <div class="mt-4 grid gap-2 sm:grid-cols-2">
-            <form method="POST" action="{{ route('live-streams.start', $session) }}">@csrf<button type="submit" @disabled($ended) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended ? 'cursor-not-allowed bg-slate-300' : 'bg-emerald-600 hover:bg-emerald-700' }}"><i class="fa-solid fa-play mr-1"></i> {{ $ended ? 'Sesi Selesai' : 'Mulai Live' }}</button></form>
+            <form method="POST" action="{{ route('live-streams.start', $session) }}">@csrf<button type="submit" @disabled($ended) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended ? 'cursor-not-allowed bg-slate-300' : 'bg-emerald-600 hover:bg-emerald-700' }}"><i class="fa-solid fa-{{ $session->started_at ? 'video' : 'play' }} mr-1"></i> {{ $ended ? 'Sesi Selesai' : ($session->started_at ? 'Masuk Ruang' : 'Mulai Live') }}</button></form>
             <a href="{{ route('live-streams.edit', $session) }}" class="inline-flex items-center justify-center rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-black text-indigo-700"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit</a>
           </div>
           <form method="POST" action="{{ route('live-streams.destroy', $session) }}" class="mt-2" onsubmit="return confirm('Hapus jadwal ini?')">@csrf @method('DELETE')<button class="w-full rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">Hapus Jadwal</button></form>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
+use App\Models\LiveStreamSignal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,11 +17,17 @@ class LiveStreamController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $query = LiveStreamSession::with(['classroom.teacher'])->withCount('participants')->orderBy('starts_at');
+        $query = LiveStreamSession::with(['classroom.teacher'])
+            ->withCount('participants')
+            ->withExists(['participants as current_user_joined' => fn ($query) => $query->whereKey(Auth::id())])
+            ->orderBy('starts_at');
 
         if ($user->role === 'teacher') {
             $query->whereHas('classroom', fn ($q) => $q->where('teacher_id', $user->id));
         } elseif ($user->role === 'student') {
+            if (($user->delivery_mode ?? 'offline') !== 'online') {
+                $query->whereRaw('1 = 0');
+            }
             $classKeys = User::studentClassLookupKeys($user->student_class);
             $branchKeys = User::branchLookupKeys($user->branch);
             $query->whereHas('classroom', function ($q) use ($user, $classKeys, $branchKeys) {
@@ -87,11 +94,12 @@ class LiveStreamController extends Controller
         abort_unless($this->canManage($liveStream->classroom), 403);
         abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
 
-        if (now()->lt($liveStream->starts_at)) {
-            $liveStream->update(['starts_at' => now()]);
-        }
+        $liveStream->update([
+            'started_at' => $liveStream->started_at ?? now(),
+            'started_by' => $liveStream->started_by ?? Auth::id(),
+        ]);
 
-        return redirect()->away($liveStream->meeting_url);
+        return redirect()->route('live-streams.room', $liveStream);
     }
 
     public function destroy(LiveStreamSession $liveStream)
@@ -105,7 +113,7 @@ class LiveStreamController extends Controller
     {
         abort_unless(Auth::user()?->role === 'student', 403);
         abort_unless($this->studentCanAccess($liveStream->classroom), 403);
-        abort_if(now()->lt($liveStream->starts_at->copy()->subMinutes(15)), 403, 'Ruang belum dibuka. Silakan masuk 15 menit sebelum mulai.');
+        abort_unless($liveStream->started_at, 403, 'Live streaming belum dimulai oleh pengajar.');
         abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
 
         DB::transaction(function () use ($liveStream) {
@@ -117,7 +125,52 @@ class LiveStreamController extends Controller
             $session->participants()->attach(Auth::id());
         });
 
-        return redirect()->away($liveStream->meeting_url);
+        return redirect()->route('live-streams.room', $liveStream);
+    }
+
+    public function room(LiveStreamSession $liveStream)
+    {
+        $isHost = (int) $liveStream->started_by === Auth::id();
+        $isManager = $this->canManage($liveStream->classroom);
+        $isParticipant = Auth::user()?->role === 'student'
+            && $this->studentCanAccess($liveStream->classroom)
+            && $liveStream->participants()->whereKey(Auth::id())->exists();
+        abort_unless($isManager || $isParticipant, 403);
+        abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
+
+        return view('live-streams.room', compact('liveStream', 'isHost'));
+    }
+
+    public function signal(Request $request, LiveStreamSession $liveStream)
+    {
+        $this->authorizeRoomMember($liveStream);
+        $data = $request->validate([
+            'to_user_id' => ['required', 'integer', 'exists:users,id'],
+            'type' => ['required', Rule::in(['offer', 'answer', 'ice'])],
+            'payload' => ['required', 'array'],
+        ]);
+        abort_unless($this->isRoomMember($liveStream, (int) $data['to_user_id']), 403);
+
+        LiveStreamSignal::create([
+            'live_stream_session_id' => $liveStream->id,
+            'from_user_id' => Auth::id(),
+            'to_user_id' => $data['to_user_id'],
+            'type' => $data['type'],
+            'payload' => $data['payload'],
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function signals(Request $request, LiveStreamSession $liveStream)
+    {
+        $this->authorizeRoomMember($liveStream);
+        $signals = LiveStreamSignal::where('live_stream_session_id', $liveStream->id)
+            ->where('to_user_id', Auth::id())
+            ->where('id', '>', max(0, (int) $request->query('after', 0)))
+            ->orderBy('id')->limit(100)->get(['id', 'from_user_id', 'type', 'payload']);
+
+        return response()->json($signals);
     }
 
     private function validateData(Request $request): array
@@ -125,7 +178,6 @@ class LiveStreamController extends Controller
         return $request->validate([
             'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')->where('delivery_mode', 'online')],
             'title' => ['required', 'string', 'max:255'],
-            'meeting_url' => ['required', 'url:http,https', 'max:2048'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
         ]);
@@ -145,8 +197,24 @@ class LiveStreamController extends Controller
     {
         $user = Auth::user();
         return $classroom->delivery_mode === 'online'
+            && ($user->delivery_mode ?? 'offline') === 'online'
             && $classroom->program_type === User::normalizeProgramType($user->program_type)
             && in_array(User::normalizeStudentClass($classroom->title), User::studentClassLookupKeys($user->student_class), true)
             && in_array(User::normalizeBranch($classroom->branch), User::branchLookupKeys($user->branch), true);
+    }
+
+    private function authorizeRoomMember(LiveStreamSession $liveStream): void
+    {
+        abort_unless($this->isRoomMember($liveStream, Auth::id()), 403);
+    }
+
+    private function isRoomMember(LiveStreamSession $liveStream, int $userId): bool
+    {
+        if ($liveStream->classroom->teacher_id === $userId) return true;
+        if ((int) $liveStream->started_by === $userId) return true;
+        $user = User::find($userId);
+        if (in_array($user?->role, ['admin', 'super_admin'], true)) return true;
+
+        return $liveStream->participants()->whereKey($userId)->exists();
     }
 }
