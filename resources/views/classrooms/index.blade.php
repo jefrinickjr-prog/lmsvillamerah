@@ -23,6 +23,7 @@
         </div>
         <h3 class="mt-5 text-lg font-black text-slate-950">{{ $classroom->title }}</h3>
         <div class="mt-2 flex flex-wrap gap-2">
+          <span class="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide {{ ($classroom->delivery_mode ?? 'offline') === 'online' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">{{ ($classroom->delivery_mode ?? 'offline') === 'online' ? 'Online' : 'Offline' }}</span>
           <span class="inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-700">{{ \App\Models\User::programTypeLabel($classroom->program_type ?? 'gambar') }}</span>
           <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-indigo-700">{{ $classroom->branch ?? 'Cabang belum diisi' }}</span>
         </div>

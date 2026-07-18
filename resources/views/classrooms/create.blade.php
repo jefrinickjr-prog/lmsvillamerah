@@ -21,6 +21,13 @@
 
       <div class="space-y-5">
         <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Kategori Pembelajaran</label>
+          <select name="delivery_mode" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" required>
+            <option value="offline" @selected(old('delivery_mode') === 'offline')>Offline / Tatap Muka</option>
+            <option value="online" @selected(old('delivery_mode') === 'online')>Online / Live Streaming</option>
+          </select>
+        </div>
+        <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Grup Program</label>
           <select name="program_type" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
             @foreach($programTypes as $value => $label)

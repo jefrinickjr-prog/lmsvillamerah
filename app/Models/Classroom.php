@@ -9,7 +9,7 @@ class Classroom extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['program_type', 'title', 'branch', 'description', 'teacher_id'];
+    protected $fillable = ['program_type', 'delivery_mode', 'title', 'branch', 'description', 'teacher_id'];
 
     public function teacher()
     {
@@ -24,5 +24,10 @@ class Classroom extends Model
     public function primaryMaterials()
     {
         return $this->hasMany(Material::class);
+    }
+
+    public function liveStreamSessions()
+    {
+        return $this->hasMany(LiveStreamSession::class);
     }
 }

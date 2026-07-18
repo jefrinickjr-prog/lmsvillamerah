@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\LiveStreamController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentManagementController;
@@ -43,6 +44,10 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     })->name('dashboard');
 
     Route::resource('classrooms', ClassroomController::class)->only(['index','create','store','edit','update','destroy']);
+    Route::get('live-streams', [LiveStreamController::class, 'index'])->name('live-streams.index');
+    Route::post('live-streams', [LiveStreamController::class, 'store'])->name('live-streams.store');
+    Route::post('live-streams/{liveStream}/join', [LiveStreamController::class, 'join'])->name('live-streams.join');
+    Route::delete('live-streams/{liveStream}', [LiveStreamController::class, 'destroy'])->name('live-streams.destroy');
     Route::resource('students', StudentManagementController::class)->only(['index','edit','update']);
     Route::resource('materials', MaterialController::class)->only(['index','create','store','edit','update','destroy']);
     Route::get('tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');

@@ -101,6 +101,7 @@ class ClassroomController extends Controller
     {
         $rules = [
             'program_type' => ['nullable', 'string', Rule::in(array_keys(User::programTypeOptions()))],
+            'delivery_mode' => ['nullable', Rule::in(['online', 'offline'])],
             'title' => ['required', 'string'],
             'branch' => ['required', 'string', 'in:'.implode(',', User::branchOptions())],
             'description' => ['nullable', 'string'],
@@ -112,6 +113,7 @@ class ClassroomController extends Controller
 
         $data = $request->validate($rules);
         $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
+        $data['delivery_mode'] = $data['delivery_mode'] ?? $classroom?->delivery_mode ?? 'offline';
         validator($data, [
             'title' => [Rule::in(User::studentClassOptions($data['program_type']))],
         ])->validate();
