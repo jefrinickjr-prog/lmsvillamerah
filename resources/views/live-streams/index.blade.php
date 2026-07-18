@@ -43,7 +43,11 @@
         @if(auth()->user()->role === 'student')
           <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">@csrf<button type="submit" @disabled($ended || $notOpen || $session->participants_count >= 20) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended || $notOpen || $session->participants_count >= 20 ? 'cursor-not-allowed bg-slate-300' : 'bg-rose-600 hover:bg-rose-700' }}">{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Belum Dibuka' : ($session->participants_count >= 20 ? 'Ruang Penuh' : 'Masuk Live Streaming')) }}</button></form>
         @else
-          <form method="POST" action="{{ route('live-streams.destroy', $session) }}" class="mt-4" onsubmit="return confirm('Hapus jadwal ini?')">@csrf @method('DELETE')<button class="w-full rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">Hapus Jadwal</button></form>
+          <div class="mt-4 grid gap-2 sm:grid-cols-2">
+            <form method="POST" action="{{ route('live-streams.start', $session) }}">@csrf<button type="submit" @disabled($ended) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended ? 'cursor-not-allowed bg-slate-300' : 'bg-emerald-600 hover:bg-emerald-700' }}"><i class="fa-solid fa-play mr-1"></i> {{ $ended ? 'Sesi Selesai' : 'Mulai Live' }}</button></form>
+            <a href="{{ route('live-streams.edit', $session) }}" class="inline-flex items-center justify-center rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-black text-indigo-700"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit</a>
+          </div>
+          <form method="POST" action="{{ route('live-streams.destroy', $session) }}" class="mt-2" onsubmit="return confirm('Hapus jadwal ini?')">@csrf @method('DELETE')<button class="w-full rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">Hapus Jadwal</button></form>
         @endif
       </article>
     @empty

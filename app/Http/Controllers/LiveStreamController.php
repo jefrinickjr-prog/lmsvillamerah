@@ -59,6 +59,41 @@ class LiveStreamController extends Controller
         return back()->with('success', 'Jadwal live streaming berhasil dibuat.');
     }
 
+    public function edit(LiveStreamSession $liveStream)
+    {
+        abort_unless($this->canManage($liveStream->classroom), 403);
+
+        $classrooms = Classroom::where('delivery_mode', 'online')
+            ->when(Auth::user()?->role === 'teacher', fn ($query) => $query->where('teacher_id', Auth::id()))
+            ->orderBy('title')
+            ->get();
+
+        return view('live-streams.edit', compact('liveStream', 'classrooms'));
+    }
+
+    public function update(Request $request, LiveStreamSession $liveStream)
+    {
+        abort_unless($this->canManage($liveStream->classroom), 403);
+        $data = $this->validateData($request);
+        $classroom = Classroom::findOrFail($data['classroom_id']);
+        abort_unless($this->canManage($classroom), 403);
+        $liveStream->update($data);
+
+        return redirect()->route('live-streams.index')->with('success', 'Jadwal live streaming berhasil diperbarui.');
+    }
+
+    public function start(LiveStreamSession $liveStream)
+    {
+        abort_unless($this->canManage($liveStream->classroom), 403);
+        abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
+
+        if (now()->lt($liveStream->starts_at)) {
+            $liveStream->update(['starts_at' => now()]);
+        }
+
+        return redirect()->away($liveStream->meeting_url);
+    }
+
     public function destroy(LiveStreamSession $liveStream)
     {
         abort_unless($this->canManage($liveStream->classroom), 403);

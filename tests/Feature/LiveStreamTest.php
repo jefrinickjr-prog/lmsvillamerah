@@ -40,6 +40,26 @@ class LiveStreamTest extends TestCase
             ->assertSessionHasErrors('live_stream');
     }
 
+    public function test_super_admin_can_edit_and_start_live_stream(): void
+    {
+        [, $session] = $this->makeSession();
+        $admin = User::factory()->create(['role' => 'super_admin']);
+
+        $this->actingAs($admin)->put(route('live-streams.update', $session), [
+            'classroom_id' => $session->classroom_id,
+            'title' => 'Live yang diperbarui',
+            'meeting_url' => 'https://zoom.us/j/123456789',
+            'starts_at' => now()->addHour()->format('Y-m-d H:i:s'),
+            'ends_at' => now()->addHours(2)->format('Y-m-d H:i:s'),
+        ])->assertRedirect(route('live-streams.index'));
+
+        $session->refresh();
+        $this->assertSame('Live yang diperbarui', $session->title);
+        $this->actingAs($admin)->post(route('live-streams.start', $session))
+            ->assertRedirect('https://zoom.us/j/123456789');
+        $this->assertTrue($session->fresh()->starts_at->lte(now()));
+    }
+
     private function makeSession(): array
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
