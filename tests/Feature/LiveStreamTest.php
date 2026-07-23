@@ -132,6 +132,20 @@ class LiveStreamTest extends TestCase
         $this->assertSame($teacher->id, $session->fresh()->started_by);
     }
 
+    public function test_teacher_sees_a_visible_start_live_button(): void
+    {
+        [, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $session->update(['started_at' => null, 'started_by' => null]);
+
+        $this->actingAs($teacher)
+            ->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Mulai Live sebagai Host')
+            ->assertSee('btn-approve-solid', false)
+            ->assertSee(route('live-streams.start', $session), false);
+    }
+
     private function makeSession(): array
     {
         $teacher = User::factory()->create(['role' => 'teacher']);

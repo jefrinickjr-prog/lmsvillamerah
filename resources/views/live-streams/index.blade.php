@@ -43,7 +43,17 @@
           <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">@csrf<button type="submit" @disabled($ended || $notOpen || $full) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended || $notOpen || $full ? 'cursor-not-allowed bg-slate-300' : 'bg-rose-600 hover:bg-rose-700' }}">{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Masuk Kembali ke Live' : 'Join Live Streaming'))) }}</button></form>
         @else
           <div class="mt-4 grid gap-2 sm:grid-cols-2">
-            <form method="POST" action="{{ route('live-streams.start', $session) }}">@csrf<button type="submit" @disabled($ended) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended ? 'cursor-not-allowed bg-slate-300' : 'bg-emerald-600 hover:bg-emerald-700' }}"><i class="fa-solid fa-{{ $session->started_at ? 'video' : 'play' }} mr-1"></i> {{ $ended ? 'Sesi Selesai' : ($session->started_at ? 'Masuk sebagai Host' : 'Mulai Live sebagai Host') }}</button></form>
+            <form method="POST" action="{{ route('live-streams.start', $session) }}">
+              @csrf
+              <button
+                type="submit"
+                @disabled($ended)
+                class="btn-action btn-approve-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended ? 'cursor-not-allowed opacity-50' : '' }}"
+              >
+                <i class="fa-solid fa-{{ $session->started_at ? 'video' : 'play' }}"></i>
+                <span>{{ $ended ? 'Sesi Selesai' : ($session->started_at ? 'Masuk sebagai Host' : 'Mulai Live sebagai Host') }}</span>
+              </button>
+            </form>
             <a href="{{ route('live-streams.edit', $session) }}" class="inline-flex items-center justify-center rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-black text-indigo-700"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit</a>
           </div>
           <form method="POST" action="{{ route('live-streams.destroy', $session) }}" class="mt-2" onsubmit="return confirm('Hapus jadwal ini?')">@csrf @method('DELETE')<button class="w-full rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">Hapus Jadwal</button></form>
