@@ -192,19 +192,33 @@
       const setRemoteDescription = async (userId, peer, description) => {
         const normalizeSdp = (sdp) => {
           if (typeof sdp !== 'string') return sdp;
+          const sourceLines = sdp.split(/\r?\n/);
+          const redPayloads = new Set(
+            sourceLines
+              .map(line => line.match(/^a=rtpmap:(\d+)\s+red\//i)?.[1])
+              .filter(Boolean)
+          );
           const unsupported = [
             /^a=max-message-size:/i,
-            /^a=fmtp:\d+\s+repair-window=/i,
             /^a=extmap-allow-mixed$/i,
-            /^a=rtcp-fb:(?:\*|\d+)\s+transport-cc(?:\s|$)/i,
-            /^a=extmap:\d+(?:\/\w+)?\s+\S*transport-wide-cc/i,
+            /^a=extmap:/i,
+            /^a=rtcp-fb:/i,
             /^a=rtcp-rsize$/i,
             /^a=rid:/i,
             /^a=simulcast:/i,
           ];
-          return sdp
-            .split(/\r?\n/)
-            .filter(line => !unsupported.some(pattern => pattern.test(line.trim())))
+          return sourceLines
+            .map(line => {
+              if (!/^m=(audio|video)\s/i.test(line)) return line;
+              const parts = line.trim().split(/\s+/);
+              return parts.filter((part, index) => index < 3 || !redPayloads.has(part)).join(' ');
+            })
+            .filter(line => {
+              const trimmed = line.trim();
+              if (unsupported.some(pattern => pattern.test(trimmed))) return false;
+              const payload = trimmed.match(/^a=(?:rtpmap|fmtp|rtcp-fb):(\d+)/i)?.[1];
+              return !payload || !redPayloads.has(payload);
+            })
             .join('\r\n');
         };
         const normalized = {
