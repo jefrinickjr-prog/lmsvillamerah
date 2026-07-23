@@ -92,23 +92,28 @@ class LiveStreamController extends Controller
     public function start(LiveStreamSession $liveStream)
     {
         abort_unless($this->canManage($liveStream->classroom), 403);
-        abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
 
         DB::transaction(function () use ($liveStream) {
             $session = LiveStreamSession::whereKey($liveStream->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+            $restarting = now()->gt($session->ends_at);
 
             $session->update([
-                'started_at' => $session->started_at ?? now(),
+                'started_at' => $restarting ? now() : ($session->started_at ?? now()),
                 // Pengelola yang menekan Mulai/Masuk Ruang menjadi host aktif.
                 // Ini juga memungkinkan pemulihan sesi saat host sebelumnya terputus.
                 'started_by' => Auth::id(),
+                // Sesi yang sudah berakhir dapat dimulai ulang tanpa membuat jadwal baru.
+                'ends_at' => $restarting ? now()->addHour() : $session->ends_at,
             ]);
 
             // Browser membentuk RTCPeerConnection baru setiap kali host masuk.
             // Offer/answer/ICE lama tidak valid untuk koneksi yang baru.
             $session->signals()->delete();
+            if ($restarting) {
+                $session->participants()->detach();
+            }
         });
 
         return redirect()->route('live-streams.room', $liveStream);
@@ -148,7 +153,11 @@ class LiveStreamController extends Controller
             && $this->studentCanAccess($liveStream->classroom)
             && $liveStream->participants()->whereKey(Auth::id())->exists();
         abort_unless($isManager || $isParticipant, 403);
-        abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
+        if (now()->gt($liveStream->ends_at)) {
+            return redirect()
+                ->route('live-streams.index')
+                ->withErrors(['live_stream' => 'Sesi live streaming sudah selesai. Host dapat menekan Mulai Ulang untuk membuka sesi selama 60 menit.']);
+        }
 
         return view('live-streams.room', compact('liveStream', 'isHost'));
     }

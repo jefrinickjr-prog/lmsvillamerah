@@ -57,11 +57,10 @@
               @csrf
               <button
                 type="submit"
-                @disabled($ended)
-                class="btn-action btn-approve-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended ? 'cursor-not-allowed opacity-50' : '' }}"
+                class="btn-action btn-approve-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm"
               >
-                <i class="fa-solid fa-{{ $session->started_at ? 'video' : 'play' }}"></i>
-                <span>{{ $ended ? 'Sesi Selesai' : ($session->started_at ? 'Masuk sebagai Host' : 'Mulai Live sebagai Host') }}</span>
+                <i class="fa-solid fa-{{ $ended ? 'rotate-right' : ($session->started_at ? 'video' : 'play') }}"></i>
+                <span>{{ $ended ? 'Mulai Ulang 60 Menit' : ($session->started_at ? 'Masuk sebagai Host' : 'Mulai Live sebagai Host') }}</span>
               </button>
             </form>
             <a href="{{ route('live-streams.edit', $session) }}" class="inline-flex items-center justify-center rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-black text-indigo-700"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit</a>

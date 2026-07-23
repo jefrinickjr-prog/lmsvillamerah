@@ -210,6 +210,42 @@ class LiveStreamTest extends TestCase
         ]);
     }
 
+    public function test_host_can_restart_an_ended_session_for_sixty_minutes(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $session->participants()->attach($student->id);
+        $session->update([
+            'starts_at' => now()->subHours(2),
+            'ends_at' => now()->subMinute(),
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Mulai Ulang 60 Menit');
+
+        $this->actingAs($teacher)
+            ->post(route('live-streams.start', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+
+        $session->refresh();
+        $this->assertTrue($session->ends_at->between(now()->addMinutes(59), now()->addMinutes(61)));
+        $this->assertSame(0, $session->participants()->count());
+    }
+
+    public function test_opening_an_ended_room_redirects_without_exception_page(): void
+    {
+        [, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $session->update(['ends_at' => now()->subMinute()]);
+
+        $this->actingAs($teacher)
+            ->get(route('live-streams.room', $session))
+            ->assertRedirect(route('live-streams.index'))
+            ->assertSessionHasErrors('live_stream');
+    }
+
     private function makeSession(): array
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
