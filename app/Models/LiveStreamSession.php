@@ -25,8 +25,4 @@ class LiveStreamSession extends Model
         return $this->belongsToMany(User::class, 'live_stream_participants')->withTimestamps();
     }
 
-    public function signals()
-    {
-        return $this->hasMany(LiveStreamSignal::class);
-    }
 }

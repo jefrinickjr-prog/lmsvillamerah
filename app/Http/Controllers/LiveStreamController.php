@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
-use App\Models\LiveStreamSignal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -108,9 +107,6 @@ class LiveStreamController extends Controller
                 'ends_at' => $restarting ? now()->addHour() : $session->ends_at,
             ]);
 
-            // Browser membentuk RTCPeerConnection baru setiap kali host masuk.
-            // Offer/answer/ICE lama tidak valid untuk koneksi yang baru.
-            $session->signals()->delete();
             if ($restarting) {
                 $session->participants()->detach();
             }
@@ -159,39 +155,10 @@ class LiveStreamController extends Controller
                 ->withErrors(['live_stream' => 'Sesi live streaming sudah selesai. Host dapat menekan Mulai Ulang untuk membuka sesi selama 60 menit.']);
         }
 
-        return view('live-streams.room', compact('liveStream', 'isHost'));
-    }
+        $roomToken = substr(hash_hmac('sha256', 'live-stream:'.$liveStream->id, (string) config('app.key')), 0, 24);
+        $meetingRoom = 'VillaMerah-LMS-'.$liveStream->id.'-'.$roomToken;
 
-    public function signal(Request $request, LiveStreamSession $liveStream)
-    {
-        $this->authorizeRoomMember($liveStream);
-        $data = $request->validate([
-            'to_user_id' => ['required', 'integer', 'exists:users,id'],
-            'type' => ['required', Rule::in(['offer', 'answer', 'ice'])],
-            'payload' => ['required', 'array'],
-        ]);
-        abort_unless($this->isRoomMember($liveStream, (int) $data['to_user_id']), 403);
-
-        LiveStreamSignal::create([
-            'live_stream_session_id' => $liveStream->id,
-            'from_user_id' => Auth::id(),
-            'to_user_id' => $data['to_user_id'],
-            'type' => $data['type'],
-            'payload' => $data['payload'],
-        ]);
-
-        return response()->json(['ok' => true]);
-    }
-
-    public function signals(Request $request, LiveStreamSession $liveStream)
-    {
-        $this->authorizeRoomMember($liveStream);
-        $signals = LiveStreamSignal::where('live_stream_session_id', $liveStream->id)
-            ->where('to_user_id', Auth::id())
-            ->where('id', '>', max(0, (int) $request->query('after', 0)))
-            ->orderBy('id')->limit(100)->get(['id', 'from_user_id', 'type', 'payload']);
-
-        return response()->json($signals);
+        return view('live-streams.room', compact('liveStream', 'isHost', 'meetingRoom'));
     }
 
     private function validateData(Request $request): array
@@ -229,18 +196,4 @@ class LiveStreamController extends Controller
             && in_array(User::normalizeBranch($classroom->branch), User::branchLookupKeys($user->branch), true);
     }
 
-    private function authorizeRoomMember(LiveStreamSession $liveStream): void
-    {
-        abort_unless($this->isRoomMember($liveStream, Auth::id()), 403);
-    }
-
-    private function isRoomMember(LiveStreamSession $liveStream, int $userId): bool
-    {
-        if ($liveStream->classroom->teacher_id === $userId) return true;
-        if ((int) $liveStream->started_by === $userId) return true;
-        $user = User::find($userId);
-        if (in_array($user?->role, ['admin', 'super_admin'], true)) return true;
-
-        return $liveStream->participants()->whereKey($userId)->exists();
-    }
 }

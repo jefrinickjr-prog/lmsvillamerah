@@ -50,8 +50,6 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::put('live-streams/{liveStream}', [LiveStreamController::class, 'update'])->name('live-streams.update');
     Route::post('live-streams/{liveStream}/start', [LiveStreamController::class, 'start'])->name('live-streams.start');
     Route::get('live-streams/{liveStream}/room', [LiveStreamController::class, 'room'])->name('live-streams.room');
-    Route::get('live-streams/{liveStream}/signals', [LiveStreamController::class, 'signals'])->name('live-streams.signals');
-    Route::post('live-streams/{liveStream}/signals', [LiveStreamController::class, 'signal'])->name('live-streams.signal');
     Route::post('live-streams/{liveStream}/join', [LiveStreamController::class, 'join'])->name('live-streams.join');
     Route::delete('live-streams/{liveStream}', [LiveStreamController::class, 'destroy'])->name('live-streams.destroy');
     Route::resource('students', StudentManagementController::class)->only(['index','edit','update']);
