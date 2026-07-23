@@ -190,13 +190,23 @@
       };
 
       const setRemoteDescription = async (userId, peer, description) => {
+        const normalizeSdp = (sdp) => {
+          if (typeof sdp !== 'string') return sdp;
+          const unsupported = [
+            /^a=max-message-size:/i,
+            /^a=fmtp:\d+\s+repair-window=/i,
+            /^a=extmap-allow-mixed$/i,
+          ];
+          return sdp
+            .split(/\r?\n/)
+            .filter(line => !unsupported.some(pattern => pattern.test(line.trim())))
+            .join('\r\n');
+        };
         const normalized = {
           ...description,
-          // Sebagian browser/embedded WebView menolak atribut SCTP opsional ini.
-          // LMS hanya membutuhkan transceiver audio/video, bukan DataChannel.
-          sdp: typeof description?.sdp === 'string'
-            ? description.sdp.replace(/^a=max-message-size:[^\r\n]*(?:\r?\n)?/gmi, '')
-            : description?.sdp,
+          // Browser lama/embedded WebView dapat menolak beberapa atribut
+          // opsional yang dikirim browser WebRTC versi lebih baru.
+          sdp: normalizeSdp(description?.sdp),
         };
         if (description.type === 'offer' && peer.signalingState !== 'stable') {
           try { await peer.setLocalDescription({ type: 'rollback' }); } catch (_) {}
