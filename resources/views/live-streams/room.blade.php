@@ -122,6 +122,7 @@
       const status = document.getElementById('status');
       const shareButton = document.getElementById('shareScreen');
       const peers = new Map();
+      const pendingIce = new Map();
       let localStream = null;
       let cameraStream = null;
       let sharingScreen = false;
@@ -141,6 +142,17 @@
         if (peers.has(userId)) return peers.get(userId);
         const peer = new RTCPeerConnection(rtcConfig);
         if (isHost && localStream) localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+        if (!isHost) {
+          const presence = peer.createDataChannel('presence');
+          presence.onopen = () => {
+            status.textContent = video.srcObject ? 'Live terhubung' : 'Terhubung · menunggu siaran host';
+          };
+        }
+        peer.ondatachannel = event => {
+          event.channel.onopen = () => {
+            status.textContent = isHost ? 'Siswa terhubung · siaran siap dikirim' : 'Terhubung ke host';
+          };
+        };
         peer.onicecandidate = event => event.candidate && send(userId, 'ice', event.candidate.toJSON()).catch(() => {});
         peer.ontrack = event => {
           video.srcObject = event.streams[0];
@@ -148,7 +160,21 @@
           status.textContent = 'Terhubung ke live streaming';
         };
         peer.onconnectionstatechange = () => {
-          status.textContent = peer.connectionState === 'connected' ? 'Live terhubung' : `Status: ${peer.connectionState}`;
+          if (peer.connectionState === 'connected') {
+            if (!isHost && !video.srcObject) {
+              waiting.classList.remove('is-hidden');
+              waiting.innerHTML = '<div><i class="meet-waiting-icon fa-solid fa-signal"></i><p class="meet-waiting-title">Sudah terhubung ke host.</p><p class="meet-waiting-copy">Menunggu host menyalakan kamera atau membagikan layar.</p></div>';
+              status.textContent = 'Terhubung · menunggu siaran host';
+            } else {
+              status.textContent = isHost ? 'Siswa terhubung' : 'Live terhubung';
+            }
+          } else if (peer.connectionState === 'failed') {
+            status.textContent = 'Koneksi gagal · mencoba menyambungkan ulang';
+            peer.restartIce();
+            if (!isHost) renegotiate(userId, peer).catch(() => {});
+          } else {
+            status.textContent = `Status: ${peer.connectionState}`;
+          }
         };
         peers.set(userId, peer);
         return peer;
@@ -162,9 +188,22 @@
       };
 
       const renegotiate = async (userId, peer) => {
+        if (peer.signalingState !== 'stable') return;
         const offer = await peer.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
         await peer.setLocalDescription(offer);
         await send(userId, 'offer', offer);
+      };
+
+      const setRemoteDescription = async (userId, peer, description) => {
+        if (description.type === 'offer' && peer.signalingState !== 'stable') {
+          try { await peer.setLocalDescription({ type: 'rollback' }); } catch (_) {}
+        }
+        await peer.setRemoteDescription(description);
+        const queued = pendingIce.get(userId) || [];
+        pendingIce.delete(userId);
+        for (const candidate of queued) {
+          try { await peer.addIceCandidate(candidate); } catch (_) {}
+        }
       };
 
       const publishTrack = async (track, stream) => {
@@ -228,14 +267,22 @@
             lastSignalId = Math.max(lastSignalId, signal.id);
             const peer = makePeer(signal.from_user_id);
             if (signal.type === 'offer') {
-              await peer.setRemoteDescription(signal.payload);
+              await setRemoteDescription(signal.from_user_id, peer, signal.payload);
               const answer = await peer.createAnswer();
               await peer.setLocalDescription(answer);
               await send(signal.from_user_id, 'answer', answer);
             } else if (signal.type === 'answer') {
-              await peer.setRemoteDescription(signal.payload);
+              if (peer.signalingState === 'have-local-offer') {
+                await setRemoteDescription(signal.from_user_id, peer, signal.payload);
+              }
             } else if (signal.type === 'ice') {
-              try { await peer.addIceCandidate(signal.payload); } catch (_) {}
+              if (peer.remoteDescription) {
+                try { await peer.addIceCandidate(signal.payload); } catch (_) {}
+              } else {
+                const queued = pendingIce.get(signal.from_user_id) || [];
+                queued.push(signal.payload);
+                pendingIce.set(signal.from_user_id, queued);
+              }
             }
           }
         } catch (_) {

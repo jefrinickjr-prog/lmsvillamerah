@@ -38,7 +38,8 @@ class LiveStreamTest extends TestCase
 
         $this->actingAs($student)->get(route('live-streams.index'))
             ->assertOk()
-            ->assertSee('Join Live Streaming');
+            ->assertSee('Join Live Streaming')
+            ->assertSee('btn-download-solid', false);
         $this->actingAs($student)->post(route('live-streams.join', $session))
             ->assertRedirect(route('live-streams.room', $session));
     }

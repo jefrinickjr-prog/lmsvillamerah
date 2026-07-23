@@ -40,7 +40,17 @@
         <p class="mt-1 text-sm font-bold text-indigo-600">{{ $session->classroom->title }} · {{ $session->classroom->branch }}</p>
         <div class="mt-4 space-y-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"><div><i class="fa-regular fa-calendar mr-2"></i>{{ $session->starts_at->format('d M Y') }}</div><div><i class="fa-regular fa-clock mr-2"></i>{{ $session->starts_at->format('H:i') }}–{{ $session->ends_at->format('H:i') }} WIB</div></div>
         @if(in_array(strtolower(trim((string) auth()->user()->role)), ['student', 'siswa'], true))
-          <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">@csrf<button type="submit" @disabled($ended || $notOpen || $full) class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white {{ $ended || $notOpen || $full ? 'cursor-not-allowed bg-slate-300' : 'bg-rose-600 hover:bg-rose-700' }}">{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Masuk Kembali ke Live' : 'Join Live Streaming'))) }}</button></form>
+          <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">
+            @csrf
+            <button
+              type="submit"
+              @disabled($ended || $notOpen || $full)
+              class="btn-action btn-download-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended || $notOpen || $full ? 'cursor-not-allowed opacity-50' : '' }}"
+            >
+              <i class="fa-solid fa-{{ $session->current_user_joined ? 'right-to-bracket' : 'video' }}"></i>
+              <span>{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar Memulai' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Masuk Kembali ke Live' : 'Join Live Streaming'))) }}</span>
+            </button>
+          </form>
         @else
           <div class="mt-4 grid gap-2 sm:grid-cols-2">
             <form method="POST" action="{{ route('live-streams.start', $session) }}">
