@@ -102,7 +102,12 @@ class LiveStreamTest extends TestCase
         $this->actingAs($admin)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->assertViewHas('isHost', true);
+            ->assertViewHas('isHost', true)
+            ->assertSee('meet-shell', false)
+            ->assertSee('Mikrofon')
+            ->assertSee('Kamera')
+            ->assertSee('Bagikan Layar')
+            ->assertSee('Keluar dari Ruang');
     }
 
     public function test_assigned_teacher_can_create_schedule_and_start_as_host(): void

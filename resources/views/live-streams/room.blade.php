@@ -3,35 +3,112 @@
 @section('title', $liveStream->title)
 
 @section('content')
-  <div class="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-    <div>
-      <p class="text-sm font-bold uppercase tracking-wider text-rose-500">Live Streaming Internal</p>
-      <h2 class="mt-1 text-3xl font-black">{{ $liveStream->title }}</h2>
-      <p class="mt-1 text-sm font-bold text-indigo-600">{{ $liveStream->classroom->title }} · {{ $liveStream->classroom->branch }}</p>
-    </div>
-    <a href="{{ route('live-streams.index') }}" class="rounded-2xl bg-slate-100 px-4 py-3 text-center text-sm font-black text-slate-700">Keluar dari Ruang</a>
-  </div>
+  <style>
+    .meet-page { color: #e5e7eb; margin: -1.5rem -1rem; min-height: calc(100vh - 5rem); padding: 1rem; }
+    .meet-shell { background: #0b0f19; border: 1px solid #202938; border-radius: 24px; box-shadow: 0 24px 70px rgb(15 23 42 / .24); margin: 0 auto; max-width: 1500px; overflow: hidden; }
+    .meet-header { align-items: center; background: #111827; border-bottom: 1px solid #263244; display: flex; gap: 16px; justify-content: space-between; padding: 16px 20px; }
+    .meet-eyebrow { color: #a5b4fc; font-size: 11px; font-weight: 900; letter-spacing: .12em; margin: 0 0 3px; text-transform: uppercase; }
+    .meet-title { color: #fff; font-size: clamp(20px, 3vw, 28px); font-weight: 900; line-height: 1.1; margin: 0; }
+    .meet-subtitle { color: #94a3b8; font-size: 13px; font-weight: 700; margin: 5px 0 0; }
+    .meet-exit { align-items: center; background: #dc2626; border: 0; border-radius: 12px; box-shadow: 0 8px 20px rgb(220 38 38 / .3); color: #fff !important; display: inline-flex; font-size: 13px; font-weight: 900; gap: 8px; min-height: 44px; padding: 0 16px; text-decoration: none; }
+    .meet-exit:hover { background: #b91c1c; transform: translateY(-1px); }
+    .meet-body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 620px; }
+    .meet-main { display: flex; flex-direction: column; min-width: 0; }
+    .meet-stage { background: #030712; flex: 1; min-height: 500px; position: relative; }
+    .meet-video { height: 100%; inset: 0; object-fit: contain; position: absolute; width: 100%; }
+    .meet-waiting { align-items: center; background: radial-gradient(circle at center, #1f2937 0, #0b0f19 60%); color: #fff; display: flex; inset: 0; justify-content: center; padding: 30px; position: absolute; text-align: center; z-index: 2; }
+    .meet-waiting.is-hidden { display: none; }
+    .meet-waiting-icon { color: #818cf8; font-size: 36px; }
+    .meet-waiting-title { color: #fff; font-size: 18px; font-weight: 900; margin: 16px 0 0; }
+    .meet-waiting-copy { color: #cbd5e1; font-size: 14px; line-height: 1.6; margin: 8px auto 0; max-width: 560px; }
+    .meet-live-badge { align-items: center; background: #dc2626; border-radius: 999px; box-shadow: 0 6px 18px rgb(220 38 38 / .35); color: #fff; display: flex; font-size: 11px; font-weight: 900; gap: 7px; left: 18px; padding: 7px 11px; position: absolute; top: 18px; z-index: 4; }
+    .meet-live-dot { background: #fff; border-radius: 999px; height: 7px; width: 7px; }
+    .meet-toolbar { align-items: center; background: #111827; border-top: 1px solid #263244; display: flex; gap: 14px; justify-content: space-between; min-height: 84px; padding: 14px 18px; }
+    .meet-status { color: #cbd5e1; font-size: 13px; font-weight: 800; line-height: 1.4; max-width: 330px; }
+    .meet-controls { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    .meet-control, .meet-primary { align-items: center; border: 0; cursor: pointer; display: inline-flex; font-family: inherit; font-size: 13px; font-weight: 900; gap: 8px; justify-content: center; min-height: 46px; padding: 0 16px; transition: .18s ease; }
+    .meet-control { background: #334155; border: 1px solid #475569; border-radius: 14px; color: #fff !important; }
+    .meet-control:hover { background: #475569; transform: translateY(-1px); }
+    .meet-control.is-off { background: #991b1b; border-color: #dc2626; }
+    .meet-primary { background: #4f46e5; border-radius: 14px; box-shadow: 0 8px 20px rgb(79 70 229 / .35); color: #fff !important; }
+    .meet-primary:hover { background: #4338ca; transform: translateY(-1px); }
+    .meet-primary.is-sharing { background: #dc2626; box-shadow: 0 8px 20px rgb(220 38 38 / .3); }
+    .meet-sidebar { background: #f8fafc; border-left: 1px solid #263244; color: #0f172a; padding: 20px; }
+    .meet-sidebar-title { font-size: 15px; font-weight: 900; margin: 0 0 16px; }
+    .meet-info-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; margin-bottom: 14px; padding: 15px; }
+    .meet-info-label { color: #64748b; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .meet-info-value { color: #0f172a; font-size: 13px; font-weight: 900; margin-top: 5px; overflow-wrap: anywhere; }
+    .meet-tip { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 16px; color: #3730a3; font-size: 12px; font-weight: 700; line-height: 1.55; padding: 14px; }
+    .meet-retry { align-items: center; background: #4f46e5; border: 0; border-radius: 12px; box-shadow: 0 8px 20px rgb(79 70 229 / .35); color: #fff !important; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 900; gap: 8px; justify-content: center; margin-top: 16px; min-height: 44px; padding: 0 18px; }
+    .meet-fallback-action { color: #a5b4fc; font-size: 12px; font-weight: 800; margin-top: 12px; }
+    @media (max-width: 900px) {
+      .meet-body { grid-template-columns: 1fr; min-height: 0; }
+      .meet-sidebar { border-left: 0; border-top: 1px solid #dbe2ea; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+      .meet-sidebar-title { grid-column: 1 / -1; margin-bottom: 0; }
+      .meet-stage { min-height: min(62vh, 520px); }
+    }
+    @media (max-width: 640px) {
+      .meet-page { margin: -1rem; padding: 0; }
+      .meet-shell { border: 0; border-radius: 0; }
+      .meet-header { align-items: flex-start; padding: 14px; }
+      .meet-exit { font-size: 0; min-width: 44px; padding: 0 13px; }
+      .meet-exit i { font-size: 15px; }
+      .meet-stage { min-height: 54vh; }
+      .meet-toolbar { align-items: stretch; flex-direction: column; padding: 12px; }
+      .meet-status { max-width: none; text-align: center; }
+      .meet-controls { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+      .meet-control, .meet-primary { font-size: 11px; min-height: 50px; padding: 0 8px; }
+      .meet-sidebar { grid-template-columns: 1fr; }
+    }
+  </style>
 
-  <div class="overflow-hidden rounded-3xl bg-slate-950 shadow-2xl">
-    <div class="relative aspect-video min-h-64">
-      <video id="liveVideo" class="h-full w-full bg-black object-contain" autoplay playsinline {{ $isHost ? 'muted' : '' }}></video>
-      <div id="waiting" class="absolute inset-0 grid place-items-center bg-slate-950 text-center text-white">
-        <div><i class="fa-solid fa-spinner fa-spin text-3xl text-indigo-400"></i><p class="mt-4 font-black">{{ $isHost ? 'Menyiapkan kamera dan mikrofon…' : 'Menghubungkan ke siaran…' }}</p></div>
-      </div>
-      <div class="absolute left-4 top-4 rounded-full bg-rose-600 px-3 py-1 text-xs font-black text-white"><i class="fa-solid fa-circle mr-1 text-[8px]"></i> LIVE</div>
-    </div>
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 p-4 text-white">
-      <div id="status" class="text-sm font-bold text-slate-300">Menghubungkan…</div>
-      @if($isHost)
-        <div class="flex flex-wrap gap-2">
-          <button id="shareScreen" type="button" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black"><i class="fa-solid fa-display mr-2"></i>Bagikan Layar</button>
-          <button id="toggleMic" type="button" class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-black"><i class="fa-solid fa-microphone mr-2"></i>Mikrofon</button>
-          <button id="toggleCamera" type="button" class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-black"><i class="fa-solid fa-video mr-2"></i>Kamera</button>
+  <div class="meet-page">
+    <section class="meet-shell">
+      <header class="meet-header">
+        <div>
+          <p class="meet-eyebrow">Live Streaming Internal</p>
+          <h2 class="meet-title">{{ $liveStream->title }}</h2>
+          <p class="meet-subtitle">{{ $liveStream->classroom->title }} · {{ $liveStream->classroom->branch }}</p>
         </div>
-      @endif
-    </div>
+        <a href="{{ route('live-streams.index') }}" class="meet-exit"><i class="fa-solid fa-phone-slash"></i><span>Keluar dari Ruang</span></a>
+      </header>
+
+      <div class="meet-body">
+        <div class="meet-main">
+          <div class="meet-stage">
+            <video id="liveVideo" class="meet-video" autoplay playsinline {{ $isHost ? 'muted' : '' }}></video>
+            <div id="waiting" class="meet-waiting">
+              <div>
+                <i class="meet-waiting-icon fa-solid fa-spinner fa-spin"></i>
+                <p class="meet-waiting-title">{{ $isHost ? 'Menyiapkan perangkat media…' : 'Menghubungkan ke siaran…' }}</p>
+                <p class="meet-waiting-copy">{{ $isHost ? 'Browser akan meminta izin kamera dan mikrofon.' : 'Mohon tunggu hingga koneksi dengan host tersedia.' }}</p>
+              </div>
+            </div>
+            <div class="meet-live-badge"><span class="meet-live-dot"></span>LIVE</div>
+          </div>
+
+          <footer class="meet-toolbar">
+            <div id="status" class="meet-status">Menghubungkan…</div>
+            @if($isHost)
+              <div class="meet-controls">
+                <button id="toggleMic" type="button" class="meet-control"><i class="fa-solid fa-microphone"></i><span>Mikrofon</span></button>
+                <button id="toggleCamera" type="button" class="meet-control"><i class="fa-solid fa-video"></i><span>Kamera</span></button>
+                <button id="shareScreen" type="button" class="meet-primary"><i class="fa-solid fa-display"></i><span>Bagikan Layar</span></button>
+              </div>
+            @endif
+          </footer>
+        </div>
+
+        <aside class="meet-sidebar">
+          <h3 class="meet-sidebar-title">Detail Pertemuan</h3>
+          <div class="meet-info-card"><div class="meet-info-label">Status Anda</div><div class="meet-info-value">{{ $isHost ? 'Host/Penyelenggara' : 'Peserta' }}</div></div>
+          <div class="meet-info-card"><div class="meet-info-label">Jadwal</div><div class="meet-info-value">{{ $liveStream->starts_at->format('d M Y, H:i') }}–{{ $liveStream->ends_at->format('H:i') }} WIB</div></div>
+          <div class="meet-info-card"><div class="meet-info-label">Kelas</div><div class="meet-info-value">{{ $liveStream->classroom->title }} · {{ $liveStream->classroom->branch }}</div></div>
+          <div class="meet-tip"><i class="fa-solid fa-shield-halved mr-2"></i>Gunakan Chrome atau Edge terbaru melalui HTTPS. Jika kamera tidak tersedia, host tetap dapat menayangkan layar.</div>
+        </aside>
+      </div>
+    </section>
   </div>
-  <p class="mt-4 rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">Izinkan akses kamera dan mikrofon pada browser. Jika perangkat media tidak tersedia, host tetap dapat memulai melalui Bagikan Layar.</p>
 
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -67,7 +144,7 @@
         peer.onicecandidate = event => event.candidate && send(userId, 'ice', event.candidate.toJSON()).catch(() => {});
         peer.ontrack = event => {
           video.srcObject = event.streams[0];
-          waiting.classList.add('hidden');
+          waiting.classList.add('is-hidden');
           status.textContent = 'Terhubung ke live streaming';
         };
         peer.onconnectionstatechange = () => {
@@ -102,8 +179,8 @@
       let startCamera;
       const showMediaFallback = (error) => {
         const detail = mediaErrorText(error);
-        waiting.classList.remove('hidden');
-        waiting.innerHTML = '<div class="px-6"><i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400"></i><p class="mt-4 font-black">Kamera/mikrofon belum aktif.</p><p id="mediaErrorDetail" class="mt-2 text-sm text-slate-300"></p><button id="retryMedia" type="button" class="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white"><i class="fa-solid fa-rotate-right mr-2"></i>Coba Kamera Lagi</button><p class="mt-3 text-xs text-slate-400">Host tetap dapat memulai dengan tombol Bagikan Layar.</p></div>';
+        waiting.classList.remove('is-hidden');
+        waiting.innerHTML = '<div><i class="meet-waiting-icon fa-solid fa-triangle-exclamation"></i><p class="meet-waiting-title">Kamera/mikrofon belum aktif.</p><p id="mediaErrorDetail" class="meet-waiting-copy"></p><button id="retryMedia" type="button" class="meet-retry"><i class="fa-solid fa-rotate-right"></i>Coba Kamera Lagi</button><p class="meet-fallback-action">Atau klik tombol Bagikan Layar pada toolbar di bawah.</p></div>';
         document.getElementById('mediaErrorDetail').textContent = detail;
         document.getElementById('retryMedia')?.addEventListener('click', () => startCamera());
         status.textContent = detail;
@@ -119,7 +196,7 @@
             video.srcObject = stream;
             for (const track of stream.getTracks()) await publishTrack(track, stream);
           }
-          waiting.classList.add('hidden');
+          waiting.classList.add('is-hidden');
           status.textContent = 'Siaran aktif · menunggu siswa';
         } catch (error) {
           showMediaFallback(error);
@@ -133,11 +210,10 @@
         if (cameraTrack) await publishTrack(cameraTrack, cameraStream);
         localStream = cameraStream || new MediaStream();
         video.srcObject = cameraStream || null;
-        shareButton.innerHTML = '<i class="fa-solid fa-display mr-2"></i>Bagikan Layar';
-        shareButton.classList.remove('bg-rose-600');
-        shareButton.classList.add('bg-indigo-600');
+        shareButton.innerHTML = '<i class="fa-solid fa-display"></i><span>Bagikan Layar</span>';
+        shareButton.classList.remove('is-sharing');
         if (cameraTrack) {
-          waiting.classList.add('hidden');
+          waiting.classList.add('is-hidden');
           status.textContent = 'Siaran kamera aktif';
         } else {
           showMediaFallback(new DOMException('Kamera belum tersedia.', 'NotFoundError'));
@@ -173,8 +249,18 @@
         }
 
         if (isHost) {
-          document.getElementById('toggleMic')?.addEventListener('click', () => cameraStream?.getAudioTracks().forEach(track => track.enabled = !track.enabled));
-          document.getElementById('toggleCamera')?.addEventListener('click', () => cameraStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled));
+          document.getElementById('toggleMic')?.addEventListener('click', event => {
+            cameraStream?.getAudioTracks().forEach(track => track.enabled = !track.enabled);
+            const enabled = cameraStream?.getAudioTracks().some(track => track.enabled) ?? false;
+            event.currentTarget.classList.toggle('is-off', !enabled);
+            event.currentTarget.innerHTML = `<i class="fa-solid fa-microphone${enabled ? '' : '-slash'}"></i><span>${enabled ? 'Mikrofon' : 'Mic Mati'}</span>`;
+          });
+          document.getElementById('toggleCamera')?.addEventListener('click', event => {
+            cameraStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+            const enabled = cameraStream?.getVideoTracks().some(track => track.enabled) ?? false;
+            event.currentTarget.classList.toggle('is-off', !enabled);
+            event.currentTarget.innerHTML = `<i class="fa-solid fa-video${enabled ? '' : '-slash'}"></i><span>${enabled ? 'Kamera' : 'Kamera Mati'}</span>`;
+          });
           shareButton?.addEventListener('click', async () => {
             if (sharingScreen) return restoreCamera();
             try {
@@ -185,11 +271,10 @@
               await publishTrack(screenTrack, localStream);
               for (const audioTrack of audioTracks) await publishTrack(audioTrack, localStream);
               video.srcObject = localStream;
-              waiting.classList.add('hidden');
+              waiting.classList.add('is-hidden');
               sharingScreen = true;
-              shareButton.innerHTML = '<i class="fa-solid fa-stop mr-2"></i>Hentikan Berbagi';
-              shareButton.classList.remove('bg-indigo-600');
-              shareButton.classList.add('bg-rose-600');
+              shareButton.innerHTML = '<i class="fa-solid fa-stop"></i><span>Hentikan Berbagi</span>';
+              shareButton.classList.add('is-sharing');
               status.textContent = 'Layar sedang dibagikan';
               screenTrack.addEventListener('ended', restoreCamera, { once: true });
             } catch (error) {
@@ -204,7 +289,7 @@
         if (isHost) {
           showMediaFallback(error);
         } else {
-          waiting.innerHTML = '<div><i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400"></i><p class="mt-4 font-black">Tidak dapat terhubung ke live streaming.</p></div>';
+          waiting.innerHTML = '<div><i class="meet-waiting-icon fa-solid fa-triangle-exclamation"></i><p class="meet-waiting-title">Tidak dapat terhubung ke live streaming.</p><p class="meet-waiting-copy">Periksa koneksi internet lalu muat ulang halaman.</p></div>';
           status.textContent = error?.message || 'Browser tidak mendukung live streaming';
         }
       }
