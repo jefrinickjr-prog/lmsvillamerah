@@ -284,36 +284,45 @@
         try {
           const response = await fetch(`${signalsUrl}?after=${lastSignalId}`, { headers: { 'Accept': 'application/json' } });
           if (!response.ok) throw new Error(`Polling signaling gagal (${response.status})`);
-          for (const signal of await response.json()) {
+          const signals = await response.json();
+          for (const signal of signals) {
             lastSignalId = Math.max(lastSignalId, signal.id);
             const peer = makePeer(signal.from_user_id);
+            const payload = typeof signal.payload === 'string'
+              ? JSON.parse(signal.payload)
+              : signal.payload;
             if (signal.type === 'offer') {
-              await setRemoteDescription(signal.from_user_id, peer, signal.payload);
+              await setRemoteDescription(signal.from_user_id, peer, payload);
               const answer = await peer.createAnswer();
               await peer.setLocalDescription(answer);
               await send(signal.from_user_id, 'answer', answer);
             } else if (signal.type === 'answer') {
               if (peer.signalingState === 'have-local-offer') {
-                await setRemoteDescription(signal.from_user_id, peer, signal.payload);
+                await setRemoteDescription(signal.from_user_id, peer, payload);
               }
             } else if (signal.type === 'ice') {
               if (peer.remoteDescription) {
-                try { await peer.addIceCandidate(signal.payload); } catch (_) {}
+                try { await peer.addIceCandidate(payload); } catch (_) {}
               } else {
                 const queued = pendingIce.get(signal.from_user_id) || [];
-                queued.push(signal.payload);
+                queued.push(payload);
                 pendingIce.set(signal.from_user_id, queued);
               }
             }
           }
-        } catch (_) {
-          status.textContent = 'Mencoba menyambungkan kembali…';
+          if (signals.length === 0 && peers.size === 0) {
+            status.textContent = isHost
+              ? 'Host siap · menunggu siswa masuk'
+              : 'Mencari koneksi host…';
+          }
+        } catch (error) {
+          status.textContent = `Gangguan signaling: ${error?.message || 'mencoba menyambungkan ulang'}`;
         }
       }, 1500);
 
       try {
-        if (!window.isSecureContext || !navigator.mediaDevices) {
-          throw new Error('Live streaming memerlukan HTTPS dan browser modern.');
+        if (!window.isSecureContext || !window.RTCPeerConnection) {
+          throw new Error('Live streaming memerlukan HTTPS dan browser yang mendukung WebRTC.');
         }
 
         if (isHost) {

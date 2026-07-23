@@ -99,8 +99,6 @@ class LiveStreamController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $hostChanged = (int) $session->started_by !== Auth::id();
-
             $session->update([
                 'started_at' => $session->started_at ?? now(),
                 // Pengelola yang menekan Mulai/Masuk Ruang menjadi host aktif.
@@ -108,9 +106,9 @@ class LiveStreamController extends Controller
                 'started_by' => Auth::id(),
             ]);
 
-            if ($hostChanged) {
-                $session->signals()->delete();
-            }
+            // Browser membentuk RTCPeerConnection baru setiap kali host masuk.
+            // Offer/answer/ICE lama tidak valid untuk koneksi yang baru.
+            $session->signals()->delete();
         });
 
         return redirect()->route('live-streams.room', $liveStream);

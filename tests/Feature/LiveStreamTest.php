@@ -155,6 +155,53 @@ class LiveStreamTest extends TestCase
             ->assertSee(route('live-streams.start', $session), false);
     }
 
+    public function test_signaling_payload_is_returned_as_a_json_object(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+
+        $this->actingAs($student)
+            ->post(route('live-streams.join', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+
+        $this->actingAs($student)
+            ->postJson(route('live-streams.signal', $session), [
+                'to_user_id' => $teacher->id,
+                'type' => 'offer',
+                'payload' => ['type' => 'offer', 'sdp' => 'test-sdp'],
+            ])
+            ->assertOk();
+
+        $this->actingAs($teacher)
+            ->getJson(route('live-streams.signals', ['liveStream' => $session, 'after' => 0]))
+            ->assertOk()
+            ->assertJsonPath('0.payload.type', 'offer')
+            ->assertJsonPath('0.payload.sdp', 'test-sdp');
+    }
+
+    public function test_same_host_reentering_clears_stale_signals(): void
+    {
+        [, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $recipient = User::factory()->create(['role' => 'student']);
+
+        LiveStreamSignal::create([
+            'live_stream_session_id' => $session->id,
+            'from_user_id' => $teacher->id,
+            'to_user_id' => $recipient->id,
+            'type' => 'offer',
+            'payload' => ['type' => 'offer', 'sdp' => 'stale'],
+        ]);
+
+        $this->actingAs($teacher)
+            ->post(route('live-streams.start', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+
+        $this->assertDatabaseMissing('live_stream_signals', [
+            'live_stream_session_id' => $session->id,
+        ]);
+    }
+
     private function makeSession(): array
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
