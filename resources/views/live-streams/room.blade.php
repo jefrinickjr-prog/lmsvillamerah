@@ -142,17 +142,6 @@
         if (peers.has(userId)) return peers.get(userId);
         const peer = new RTCPeerConnection(rtcConfig);
         if (isHost && localStream) localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
-        if (!isHost) {
-          const presence = peer.createDataChannel('presence');
-          presence.onopen = () => {
-            status.textContent = video.srcObject ? 'Live terhubung' : 'Terhubung · menunggu siaran host';
-          };
-        }
-        peer.ondatachannel = event => {
-          event.channel.onopen = () => {
-            status.textContent = isHost ? 'Siswa terhubung · siaran siap dikirim' : 'Terhubung ke host';
-          };
-        };
         peer.onicecandidate = event => event.candidate && send(userId, 'ice', event.candidate.toJSON()).catch(() => {});
         peer.ontrack = event => {
           video.srcObject = event.streams[0];
@@ -201,10 +190,18 @@
       };
 
       const setRemoteDescription = async (userId, peer, description) => {
+        const normalized = {
+          ...description,
+          // Sebagian browser/embedded WebView menolak atribut SCTP opsional ini.
+          // LMS hanya membutuhkan transceiver audio/video, bukan DataChannel.
+          sdp: typeof description?.sdp === 'string'
+            ? description.sdp.replace(/^a=max-message-size:[^\r\n]*(?:\r?\n)?/gmi, '')
+            : description?.sdp,
+        };
         if (description.type === 'offer' && peer.signalingState !== 'stable') {
           try { await peer.setLocalDescription({ type: 'rollback' }); } catch (_) {}
         }
-        await peer.setRemoteDescription(description);
+        await peer.setRemoteDescription(normalized);
         const queued = pendingIce.get(userId) || [];
         pendingIce.delete(userId);
         for (const candidate of queued) {
