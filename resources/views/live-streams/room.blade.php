@@ -196,6 +196,11 @@
             /^a=max-message-size:/i,
             /^a=fmtp:\d+\s+repair-window=/i,
             /^a=extmap-allow-mixed$/i,
+            /^a=rtcp-fb:(?:\*|\d+)\s+transport-cc(?:\s|$)/i,
+            /^a=extmap:\d+(?:\/\w+)?\s+\S*transport-wide-cc/i,
+            /^a=rtcp-rsize$/i,
+            /^a=rid:/i,
+            /^a=simulcast:/i,
           ];
           return sdp
             .split(/\r?\n/)

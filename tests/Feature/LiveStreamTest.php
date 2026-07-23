@@ -115,7 +115,11 @@ class LiveStreamTest extends TestCase
             ->assertDontSee("createDataChannel('presence')", false)
             ->assertSee('max-message-size', false)
             ->assertSee('repair-window', false)
-            ->assertSee('extmap-allow-mixed', false);
+            ->assertSee('extmap-allow-mixed', false)
+            ->assertSee('transport-cc', false)
+            ->assertSee('transport-wide-cc', false)
+            ->assertSee('rtcp-rsize', false)
+            ->assertSee('simulcast', false);
     }
 
     public function test_assigned_teacher_can_create_schedule_and_start_as_host(): void
