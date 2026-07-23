@@ -80,8 +80,8 @@
             <div id="waiting" class="meet-waiting">
               <div>
                 <i class="meet-waiting-icon fa-solid fa-spinner fa-spin"></i>
-                <p class="meet-waiting-title">{{ $isHost ? 'Menyiapkan perangkat media…' : 'Menghubungkan ke siaran…' }}</p>
-                <p class="meet-waiting-copy">{{ $isHost ? 'Browser akan meminta izin kamera dan mikrofon.' : 'Mohon tunggu hingga koneksi dengan host tersedia.' }}</p>
+                <p class="meet-waiting-title">{{ $isHost ? 'Anda sudah masuk sebagai host' : 'Menghubungkan ke siaran…' }}</p>
+                <p class="meet-waiting-copy">{{ $isHost ? 'Kamera dan mikrofon bersifat opsional. Aktifkan melalui toolbar saat diperlukan.' : 'Mohon tunggu hingga koneksi dengan host tersedia.' }}</p>
               </div>
             </div>
             <div class="meet-live-badge"><span class="meet-live-dot"></span>LIVE</div>
@@ -91,8 +91,8 @@
             <div id="status" class="meet-status">Menghubungkan…</div>
             @if($isHost)
               <div class="meet-controls">
-                <button id="toggleMic" type="button" class="meet-control"><i class="fa-solid fa-microphone"></i><span>Mikrofon</span></button>
-                <button id="toggleCamera" type="button" class="meet-control"><i class="fa-solid fa-video"></i><span>Kamera</span></button>
+                <button id="toggleMic" type="button" class="meet-control is-off"><i class="fa-solid fa-microphone-slash"></i><span>Mic Mati</span></button>
+                <button id="toggleCamera" type="button" class="meet-control is-off"><i class="fa-solid fa-video-slash"></i><span>Kamera Mati</span></button>
                 <button id="shareScreen" type="button" class="meet-primary"><i class="fa-solid fa-display"></i><span>Bagikan Layar</span></button>
               </div>
             @endif
@@ -187,6 +187,12 @@
         return error?.message || 'Kamera dan mikrofon tidak dapat diakses.';
       };
 
+      const showHostReady = (message = 'Kamera dan mikrofon nonaktif. Aktifkan melalui toolbar saat diperlukan.') => {
+        waiting.classList.remove('is-hidden');
+        waiting.innerHTML = '<div><i class="meet-waiting-icon fa-solid fa-user-shield"></i><p class="meet-waiting-title">Anda sudah masuk sebagai host</p><p id="hostReadyDetail" class="meet-waiting-copy"></p><p class="meet-fallback-action">Siswa dapat masuk sekarang. Kamera, mikrofon, dan berbagi layar bersifat opsional.</p></div>';
+        document.getElementById('hostReadyDetail').textContent = message;
+      };
+
       const renegotiate = async (userId, peer) => {
         if (peer.signalingState !== 'stable') return;
         const offer = await peer.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
@@ -215,31 +221,45 @@
         }));
       };
 
-      let startCamera;
       const showMediaFallback = (error) => {
         const detail = mediaErrorText(error);
-        waiting.classList.remove('is-hidden');
-        waiting.innerHTML = '<div><i class="meet-waiting-icon fa-solid fa-triangle-exclamation"></i><p class="meet-waiting-title">Kamera/mikrofon belum aktif.</p><p id="mediaErrorDetail" class="meet-waiting-copy"></p><button id="retryMedia" type="button" class="meet-retry"><i class="fa-solid fa-rotate-right"></i>Coba Kamera Lagi</button><p class="meet-fallback-action">Atau klik tombol Bagikan Layar pada toolbar di bawah.</p></div>';
-        document.getElementById('mediaErrorDetail').textContent = detail;
-        document.getElementById('retryMedia')?.addEventListener('click', () => startCamera());
+        showHostReady(detail);
         status.textContent = detail;
       };
 
-      startCamera = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          cameraStream?.getTracks().forEach(track => track.stop());
-          cameraStream = stream;
-          if (!sharingScreen) {
-            localStream = stream;
-            video.srcObject = stream;
-            for (const track of stream.getTracks()) await publishTrack(track, stream);
-          }
-          waiting.classList.add('is-hidden');
-          status.textContent = 'Siaran aktif · menunggu siswa';
-        } catch (error) {
-          showMediaFallback(error);
+      const setControlState = (button, kind, enabled) => {
+        button.classList.toggle('is-off', !enabled);
+        const icon = kind === 'audio'
+          ? `fa-microphone${enabled ? '' : '-slash'}`
+          : `fa-video${enabled ? '' : '-slash'}`;
+        const label = kind === 'audio'
+          ? (enabled ? 'Mikrofon' : 'Mic Mati')
+          : (enabled ? 'Kamera' : 'Kamera Mati');
+        button.innerHTML = `<i class="fa-solid ${icon}"></i><span>${label}</span>`;
+      };
+
+      const enableMediaKind = async (kind) => {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: kind === 'video',
+          audio: kind === 'audio',
+        });
+        cameraStream ||= new MediaStream();
+        const track = kind === 'video' ? stream.getVideoTracks()[0] : stream.getAudioTracks()[0];
+        cameraStream.getTracks().filter(item => item.kind === kind).forEach(item => {
+          cameraStream.removeTrack(item);
+          item.stop();
+        });
+        cameraStream.addTrack(track);
+        if (!sharingScreen) {
+          localStream = cameraStream;
+          await publishTrack(track, cameraStream);
         }
+        if (kind === 'video' && !sharingScreen) {
+          video.srcObject = cameraStream;
+          waiting.classList.add('is-hidden');
+        }
+        status.textContent = `${kind === 'video' ? 'Kamera' : 'Mikrofon'} aktif · ruang live siap`;
+        return track;
       };
 
       const restoreCamera = async () => {
@@ -255,7 +275,8 @@
           waiting.classList.add('is-hidden');
           status.textContent = 'Siaran kamera aktif';
         } else {
-          showMediaFallback(new DOMException('Kamera belum tersedia.', 'NotFoundError'));
+          showHostReady();
+          status.textContent = 'Berbagi layar dihentikan · host tetap terhubung';
         }
       };
 
@@ -296,17 +317,38 @@
         }
 
         if (isHost) {
-          document.getElementById('toggleMic')?.addEventListener('click', event => {
-            cameraStream?.getAudioTracks().forEach(track => track.enabled = !track.enabled);
-            const enabled = cameraStream?.getAudioTracks().some(track => track.enabled) ?? false;
-            event.currentTarget.classList.toggle('is-off', !enabled);
-            event.currentTarget.innerHTML = `<i class="fa-solid fa-microphone${enabled ? '' : '-slash'}"></i><span>${enabled ? 'Mikrofon' : 'Mic Mati'}</span>`;
+          document.getElementById('toggleMic')?.addEventListener('click', async event => {
+            const button = event.currentTarget;
+            let track = cameraStream?.getAudioTracks()[0];
+            try {
+              if (!track) track = await enableMediaKind('audio');
+              else track.enabled = !track.enabled;
+              setControlState(button, 'audio', track.enabled);
+              status.textContent = track.enabled ? 'Mikrofon aktif' : 'Mikrofon dimatikan · host tetap terhubung';
+            } catch (error) {
+              setControlState(button, 'audio', false);
+              showMediaFallback(error);
+            }
           });
-          document.getElementById('toggleCamera')?.addEventListener('click', event => {
-            cameraStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-            const enabled = cameraStream?.getVideoTracks().some(track => track.enabled) ?? false;
-            event.currentTarget.classList.toggle('is-off', !enabled);
-            event.currentTarget.innerHTML = `<i class="fa-solid fa-video${enabled ? '' : '-slash'}"></i><span>${enabled ? 'Kamera' : 'Kamera Mati'}</span>`;
+          document.getElementById('toggleCamera')?.addEventListener('click', async event => {
+            const button = event.currentTarget;
+            let track = cameraStream?.getVideoTracks()[0];
+            try {
+              if (!track) track = await enableMediaKind('video');
+              else track.enabled = !track.enabled;
+              setControlState(button, 'video', track.enabled);
+              if (track.enabled && !sharingScreen) {
+                video.srcObject = cameraStream;
+                waiting.classList.add('is-hidden');
+                status.textContent = 'Kamera aktif';
+              } else if (!sharingScreen) {
+                showHostReady('Kamera dimatikan. Host tetap berada di dalam ruang dan siswa tetap dapat terhubung.');
+                status.textContent = 'Kamera dimatikan · host tetap terhubung';
+              }
+            } catch (error) {
+              setControlState(button, 'video', false);
+              showMediaFallback(error);
+            }
           });
           shareButton?.addEventListener('click', async () => {
             if (sharingScreen) return restoreCamera();
@@ -328,7 +370,9 @@
               status.textContent = mediaErrorText(error);
             }
           });
-          await startCamera();
+          localStream = new MediaStream();
+          showHostReady();
+          status.textContent = 'Host sudah masuk · kamera dan mikrofon nonaktif';
         } else {
           await renegotiate(hostUserId, makePeer(hostUserId));
         }

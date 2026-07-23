@@ -108,7 +108,10 @@ class LiveStreamTest extends TestCase
             ->assertSee('Mikrofon')
             ->assertSee('Kamera')
             ->assertSee('Bagikan Layar')
-            ->assertSee('Keluar dari Ruang');
+            ->assertSee('Keluar dari Ruang')
+            ->assertSee('Anda sudah masuk sebagai host')
+            ->assertSee('kamera dan mikrofon nonaktif')
+            ->assertDontSee('await startCamera();', false);
     }
 
     public function test_assigned_teacher_can_create_schedule_and_start_as_host(): void
