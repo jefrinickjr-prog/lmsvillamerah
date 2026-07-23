@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
+use App\Models\LiveStreamSignal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -72,6 +73,63 @@ class LiveStreamTest extends TestCase
             ->assertRedirect(route('live-streams.room', $session));
         $this->assertTrue($session->fresh()->started_at->lte(now()));
         $this->assertSame($admin->id, $session->fresh()->started_by);
+    }
+
+    public function test_manager_who_enters_an_existing_session_becomes_the_active_host(): void
+    {
+        [, $session] = $this->makeSession();
+        $previousHost = $session->started_by;
+        $admin = User::factory()->create(['role' => 'super_admin']);
+
+        LiveStreamSignal::create([
+            'live_stream_session_id' => $session->id,
+            'from_user_id' => $previousHost,
+            'to_user_id' => $admin->id,
+            'type' => 'offer',
+            'payload' => ['type' => 'offer', 'sdp' => 'stale'],
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('live-streams.start', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+
+        $session->refresh();
+        $this->assertSame($admin->id, $session->started_by);
+        $this->assertDatabaseMissing('live_stream_signals', [
+            'live_stream_session_id' => $session->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('live-streams.room', $session))
+            ->assertOk()
+            ->assertViewHas('isHost', true);
+    }
+
+    public function test_assigned_teacher_can_create_schedule_and_start_as_host(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $classroom = Classroom::create([
+            'program_type' => 'gambar',
+            'delivery_mode' => 'online',
+            'title' => 'SR Gold',
+            'branch' => 'Bandung',
+            'teacher_id' => $teacher->id,
+        ]);
+
+        $this->actingAs($teacher)->post(route('live-streams.store'), [
+            'classroom_id' => $classroom->id,
+            'title' => 'Live buatan pengajar',
+            'starts_at' => now()->subMinute()->format('Y-m-d H:i:s'),
+            'ends_at' => now()->addHour()->format('Y-m-d H:i:s'),
+        ])->assertRedirect();
+
+        $session = LiveStreamSession::where('title', 'Live buatan pengajar')->firstOrFail();
+
+        $this->actingAs($teacher)
+            ->post(route('live-streams.start', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+
+        $this->assertSame($teacher->id, $session->fresh()->started_by);
     }
 
     private function makeSession(): array

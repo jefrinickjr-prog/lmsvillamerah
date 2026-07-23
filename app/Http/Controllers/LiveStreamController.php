@@ -94,10 +94,24 @@ class LiveStreamController extends Controller
         abort_unless($this->canManage($liveStream->classroom), 403);
         abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
 
-        $liveStream->update([
-            'started_at' => $liveStream->started_at ?? now(),
-            'started_by' => $liveStream->started_by ?? Auth::id(),
-        ]);
+        DB::transaction(function () use ($liveStream) {
+            $session = LiveStreamSession::whereKey($liveStream->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $hostChanged = (int) $session->started_by !== Auth::id();
+
+            $session->update([
+                'started_at' => $session->started_at ?? now(),
+                // Pengelola yang menekan Mulai/Masuk Ruang menjadi host aktif.
+                // Ini juga memungkinkan pemulihan sesi saat host sebelumnya terputus.
+                'started_by' => Auth::id(),
+            ]);
+
+            if ($hostChanged) {
+                $session->signals()->delete();
+            }
+        });
 
         return redirect()->route('live-streams.room', $liveStream);
     }

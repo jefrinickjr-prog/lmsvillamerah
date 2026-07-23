@@ -39,7 +39,11 @@
       let lastSignalId = 0;
       const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-      const send = async (to, type, payload) => fetch(signalUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }, body: JSON.stringify({ to_user_id: to, type, payload }) });
+      const send = async (to, type, payload) => {
+        const response = await fetch(signalUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }, body: JSON.stringify({ to_user_id: to, type, payload }) });
+        if (!response.ok) throw new Error(`Signaling gagal (${response.status})`);
+        return response;
+      };
       const makePeer = (userId) => {
         if (peers.has(userId)) return peers.get(userId);
         const peer = new RTCPeerConnection(rtcConfig);
@@ -52,6 +56,9 @@
       };
 
       try {
+        if (!window.isSecureContext || !navigator.mediaDevices) {
+          throw new Error('Live streaming memerlukan HTTPS dan browser yang mendukung media.');
+        }
         if (isHost) {
           localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           cameraStream = localStream;
@@ -110,7 +117,7 @@
             }
           } catch (_) { status.textContent = 'Mencoba menyambungkan kembali…'; }
         }, 1500);
-      } catch (error) { waiting.classList.remove('hidden'); waiting.innerHTML = '<div><i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400"></i><p class="mt-4 font-black">Kamera/mikrofon tidak dapat diakses.</p><p class="mt-2 text-sm text-slate-300">Periksa izin browser lalu muat ulang halaman.</p></div>'; status.textContent = 'Perangkat media tidak tersedia'; }
+      } catch (error) { waiting.classList.remove('hidden'); waiting.innerHTML = '<div><i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400"></i><p class="mt-4 font-black">Live streaming tidak dapat dimulai.</p><p class="mt-2 text-sm text-slate-300">Pastikan halaman menggunakan HTTPS, lalu izinkan kamera dan mikrofon pada browser.</p></div>'; status.textContent = error?.message || 'Perangkat media tidak tersedia'; }
     });
   </script>
 @endsection
