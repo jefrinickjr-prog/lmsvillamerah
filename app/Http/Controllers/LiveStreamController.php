@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
-use App\Services\JaasJwtService;
+use App\Services\WherebyMeetingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -84,28 +84,40 @@ class LiveStreamController extends Controller
         $data = $this->validateData($request);
         $classroom = Classroom::findOrFail($data['classroom_id']);
         abort_unless($this->canManage($classroom), 403);
-        $liveStream->update($data);
+        $liveStream->update($data + [
+            'meeting_url' => null,
+            'whereby_meeting_id' => null,
+            'whereby_host_url' => null,
+            'started_at' => null,
+            'started_by' => null,
+        ]);
 
         return redirect()->route('live-streams.index')->with('success', 'Jadwal live streaming berhasil diperbarui.');
     }
 
-    public function start(LiveStreamSession $liveStream)
+    public function start(LiveStreamSession $liveStream, WherebyMeetingService $whereby)
     {
         abort_unless($this->canManage($liveStream->classroom), 403);
 
-        DB::transaction(function () use ($liveStream) {
+        $restarting = now()->gt($liveStream->ends_at);
+        $endsAt = $restarting ? now()->addHour() : $liveStream->ends_at;
+        $needsRoom = $restarting || ! $liveStream->meeting_url || ! $liveStream->whereby_host_url;
+
+        try {
+            $meeting = $needsRoom ? $whereby->create($endsAt, $liveStream->id) : [];
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['live_stream' => $exception->getMessage()]);
+        }
+
+        DB::transaction(function () use ($liveStream, $restarting, $endsAt, $meeting) {
             $session = LiveStreamSession::whereKey($liveStream->id)
                 ->lockForUpdate()
                 ->firstOrFail();
-            $restarting = now()->gt($session->ends_at);
 
-            $session->update([
+            $session->update($meeting + [
                 'started_at' => $restarting ? now() : ($session->started_at ?? now()),
-                // Pengelola yang menekan Mulai/Masuk Ruang menjadi host aktif.
-                // Ini juga memungkinkan pemulihan sesi saat host sebelumnya terputus.
                 'started_by' => Auth::id(),
-                // Sesi yang sudah berakhir dapat dimulai ulang tanpa membuat jadwal baru.
-                'ends_at' => $restarting ? now()->addHour() : $session->ends_at,
+                'ends_at' => $endsAt,
             ]);
 
             if ($restarting) {
@@ -142,7 +154,7 @@ class LiveStreamController extends Controller
         return redirect()->route('live-streams.room', $liveStream);
     }
 
-    public function room(LiveStreamSession $liveStream, JaasJwtService $jaas)
+    public function room(LiveStreamSession $liveStream)
     {
         $isHost = (int) $liveStream->started_by === Auth::id();
         $isManager = $this->canManage($liveStream->classroom);
@@ -156,16 +168,12 @@ class LiveStreamController extends Controller
                 ->withErrors(['live_stream' => 'Sesi live streaming sudah selesai. Host dapat menekan Mulai Ulang untuk membuka sesi selama 60 menit.']);
         }
 
-        $meetingConfiguration = null;
-        $meetingConfigurationError = null;
-        try {
-            $meetingConfiguration = $jaas->configurationFor($liveStream, Auth::user(), $isHost);
-        } catch (\RuntimeException $exception) {
-            report($exception);
-            $meetingConfigurationError = $exception->getMessage();
-        }
+        $meetingRoomUrl = $isHost ? $liveStream->whereby_host_url : $liveStream->meeting_url;
+        $meetingConfigurationError = $meetingRoomUrl
+            ? null
+            : 'Ruang Whereby belum dibuat. Host perlu menekan Mulai Live terlebih dahulu.';
 
-        return view('live-streams.room', compact('liveStream', 'isHost', 'meetingConfiguration', 'meetingConfigurationError'));
+        return view('live-streams.room', compact('liveStream', 'isHost', 'meetingRoomUrl', 'meetingConfigurationError'));
     }
 
     private function validateData(Request $request): array

@@ -13,8 +13,8 @@
     .meeting-exit { align-items: center; background: #dc2626; border-radius: 12px; box-shadow: 0 8px 20px rgb(220 38 38 / .3); color: #fff !important; display: inline-flex; font-size: 13px; font-weight: 900; gap: 8px; min-height: 44px; padding: 0 16px; text-decoration: none; }
     .meeting-body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 680px; }
     .meeting-main { background: #030712; min-height: 680px; position: relative; }
-    #jitsiMeeting { height: 100%; inset: 0; min-height: 680px; position: absolute; width: 100%; }
-    #jitsiMeeting iframe { border: 0 !important; height: 100% !important; width: 100% !important; }
+    #wherebyMeeting { height: 100%; inset: 0; min-height: 680px; position: absolute; width: 100%; }
+    #wherebyMeeting iframe { border: 0 !important; height: 100% !important; width: 100% !important; }
     .meeting-loading { align-items: center; background: radial-gradient(circle at center, #1f2937, #0b0f19 65%); color: #fff; display: flex; inset: 0; justify-content: center; padding: 30px; position: absolute; text-align: center; z-index: 3; }
     .meeting-loading.is-hidden { display: none; }
     .meeting-loading i { color: #818cf8; font-size: 38px; }
@@ -30,7 +30,7 @@
     .meeting-fallback.is-visible { display: inline-flex; }
     @media (max-width: 900px) {
       .meeting-body { grid-template-columns: 1fr; min-height: 0; }
-      .meeting-main, #jitsiMeeting { min-height: 72vh; }
+      .meeting-main, #wherebyMeeting { min-height: 72vh; }
       .meeting-sidebar { border-left: 0; border-top: 1px solid #dbe2ea; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
       .meeting-sidebar h3 { grid-column: 1 / -1; margin-bottom: 0; }
     }
@@ -40,7 +40,7 @@
       .meeting-header { align-items: flex-start; padding: 14px; }
       .meeting-exit { font-size: 0; min-width: 44px; padding: 0 13px; }
       .meeting-exit i { font-size: 15px; }
-      .meeting-main, #jitsiMeeting { min-height: 68vh; }
+      .meeting-main, #wherebyMeeting { min-height: 68vh; }
       .meeting-sidebar { grid-template-columns: 1fr; }
     }
   </style>
@@ -58,7 +58,7 @@
 
       <div class="meeting-body">
         <main class="meeting-main">
-          <div id="jitsiMeeting"></div>
+          <div id="wherebyMeeting"></div>
           <div id="meetingLoading" class="meeting-loading">
             <div>
               <i class="fa-solid fa-spinner fa-spin"></i>
@@ -80,9 +80,7 @@
     </section>
   </div>
 
-  @if ($meetingConfiguration)
-    <script src="{{ $meetingConfiguration['scriptUrl'] }}"></script>
-  @endif
+  <script src="https://cdn.srv.whereby.com/embed/v2-embed.js" type="module"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const loading = document.getElementById('meetingLoading');
@@ -96,53 +94,29 @@
         loading.querySelector('i').className = 'fa-solid fa-triangle-exclamation';
       };
 
-      const meetingConfiguration = @json($meetingConfiguration);
+      const meetingRoomUrl = @json($meetingRoomUrl);
       const configurationError = @json($meetingConfigurationError);
 
-      if (configurationError || !meetingConfiguration) {
-        showFailure(configurationError || 'Konfigurasi JaaS belum tersedia.');
-        return;
-      }
-
-      if (typeof JitsiMeetExternalAPI === 'undefined') {
-        showFailure('Layanan meeting gagal dimuat. Muat ulang halaman atau periksa koneksi internet.');
+      if (configurationError || !meetingRoomUrl) {
+        showFailure(configurationError || 'Konfigurasi Whereby belum tersedia.');
         return;
       }
 
       try {
-        const api = new JitsiMeetExternalAPI(meetingConfiguration.domain, {
-          roomName: meetingConfiguration.roomName,
-          jwt: meetingConfiguration.jwt,
-          parentNode: document.getElementById('jitsiMeeting'),
-          width: '100%',
-          height: '100%',
-          lang: 'id',
-          userInfo: {
-            displayName: @json(auth()->user()->name),
-          },
-          configOverwrite: {
-            startWithAudioMuted: true,
-            startWithVideoMuted: true,
-            prejoinPageEnabled: false,
-            disableDeepLinking: true,
-            brandingRoomAlias: meetingConfiguration.room,
-          },
-          interfaceConfigOverwrite: {
-            MOBILE_APP_PROMO: false,
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_WATERMARK_FOR_GUESTS: false,
-            TILE_VIEW_MAX_COLUMNS: 4,
-          },
-        });
+        const meeting = document.createElement('whereby-embed');
+        meeting.setAttribute('room', meetingRoomUrl);
+        meeting.displayName = @json(auth()->user()->name);
+        meeting.setAttribute('audio', 'off');
+        meeting.setAttribute('video', 'off');
+        meeting.setAttribute('background', 'off');
+        meeting.setAttribute('style', 'display:block;height:100%;width:100%');
+        document.getElementById('wherebyMeeting').appendChild(meeting);
 
-        api.addEventListener('videoConferenceJoined', () => {
+        meeting.addEventListener('ready', () => {
           loading.classList.add('is-hidden');
         });
-        api.addEventListener('readyToClose', () => {
+        meeting.addEventListener('leave', () => {
           window.location.assign(@json(route('live-streams.index')));
-        });
-        api.addEventListener('errorOccurred', event => {
-          showFailure(event?.message || 'Ruang meeting mengalami gangguan. Silakan buka pada tab baru.');
         });
 
         window.setTimeout(() => {

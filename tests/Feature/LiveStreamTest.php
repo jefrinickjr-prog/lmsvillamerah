@@ -5,14 +5,31 @@ namespace Tests\Feature;
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
-use App\Services\JaasJwtService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class LiveStreamTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Config::set('services.whereby', [
+            'api_key' => 'test-whereby-key',
+            'api_url' => 'https://api.whereby.dev/v1',
+        ]);
+        Http::fake([
+            'api.whereby.dev/*' => Http::response([
+                'meetingId' => 'whereby-meeting-123',
+                'roomUrl' => 'https://villamerah.whereby.com/test-room',
+                'hostRoomUrl' => 'https://villamerah.whereby.com/test-room?roomKey=host-secret',
+            ], 201),
+        ]);
+    }
 
     public function test_matching_online_student_can_join_live_stream(): void
     {
@@ -93,12 +110,13 @@ class LiveStreamTest extends TestCase
             ->get(route('live-streams.room', $session))
             ->assertOk()
             ->assertViewHas('isHost', true)
-            ->assertViewHas('meetingConfiguration')
+            ->assertViewHas('meetingRoomUrl')
             ->assertSee('meeting-shell', false)
-            ->assertSee('JitsiMeetExternalAPI', false)
-            ->assertSee('startWithAudioMuted', false)
-            ->assertSee('startWithVideoMuted', false)
+            ->assertSee('whereby-embed', false)
+            ->assertSee('cdn.srv.whereby.com', false)
             ->assertSee('Keluar dari Ruang')
+            ->assertDontSee('meet.jit.si', false)
+            ->assertDontSee('8x8.vc', false)
             ->assertDontSee('RTCPeerConnection', false)
             ->assertDontSee('setRemoteDescription', false);
     }
@@ -147,7 +165,6 @@ class LiveStreamTest extends TestCase
     public function test_student_and_host_receive_the_same_stable_meeting_room(): void
     {
         [$student, $session] = $this->makeSession();
-        $this->mockJaas($session);
         $teacher = $session->classroom->teacher;
 
         $this->actingAs($student)
@@ -157,15 +174,14 @@ class LiveStreamTest extends TestCase
         $hostResponse = $this->actingAs($teacher)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->viewData('meetingConfiguration');
+            ->viewData('meetingRoomUrl');
         $studentResponse = $this->actingAs($student)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->viewData('meetingConfiguration');
+            ->viewData('meetingRoomUrl');
 
-        $this->assertSame($hostResponse['roomName'], $studentResponse['roomName']);
-        $this->assertSame('test-app/villa-merah-lms-'.$session->id, $hostResponse['roomName']);
-        $this->assertNotSame($hostResponse['jwt'], $studentResponse['jwt']);
+        $this->assertSame('https://villamerah.whereby.com/class-room', $studentResponse);
+        $this->assertSame('https://villamerah.whereby.com/class-room?roomKey=host-secret', $hostResponse);
     }
 
     public function test_host_can_restart_an_ended_session_for_sixty_minutes(): void
@@ -209,24 +225,18 @@ class LiveStreamTest extends TestCase
         $teacher = User::factory()->create(['role' => 'teacher']);
         $student = User::factory()->create(['role' => 'student', 'program_type' => 'gambar', 'delivery_mode' => 'online', 'student_class' => 'SR Gold', 'branch' => 'Bandung']);
         $classroom = Classroom::create(['program_type' => 'gambar', 'delivery_mode' => 'online', 'title' => 'SR Gold', 'branch' => 'Bandung', 'teacher_id' => $teacher->id]);
-        $session = LiveStreamSession::create(['classroom_id' => $classroom->id, 'title' => 'Live', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'started_at' => now(), 'started_by' => $teacher->id]);
+        $session = LiveStreamSession::create([
+            'classroom_id' => $classroom->id,
+            'title' => 'Live',
+            'meeting_url' => 'https://villamerah.whereby.com/class-room',
+            'whereby_meeting_id' => 'meeting-id',
+            'whereby_host_url' => 'https://villamerah.whereby.com/class-room?roomKey=host-secret',
+            'starts_at' => now()->subMinute(),
+            'ends_at' => now()->addHour(),
+            'started_at' => now(),
+            'started_by' => $teacher->id,
+        ]);
 
         return [$student, $session];
-    }
-
-    private function mockJaas(LiveStreamSession $session): void
-    {
-        $service = Mockery::mock(JaasJwtService::class);
-        $service->shouldReceive('configurationFor')
-            ->twice()
-            ->andReturnUsing(fn ($liveStream, $user, $moderator) => [
-                'domain' => '8x8.vc',
-                'appId' => 'test-app',
-                'room' => 'villa-merah-lms-'.$session->id,
-                'roomName' => 'test-app/villa-merah-lms-'.$session->id,
-                'jwt' => $moderator ? 'host-token' : 'student-token',
-                'scriptUrl' => 'https://8x8.vc/test-app/external_api.js',
-            ]);
-        $this->app->instance(JaasJwtService::class, $service);
     }
 }
