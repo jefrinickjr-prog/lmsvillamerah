@@ -15,6 +15,11 @@ class WherebyMeetingService
         $apiKey = trim((string) config('services.whereby.api_key'));
         $apiUrl = rtrim((string) config('services.whereby.api_url'), '/');
 
+        // Gunakan mock service untuk development jika API key kosong
+        if ($apiKey === '' && config('app.env') !== 'production') {
+            return (new MockWherebyMeetingService())->create($endsAt, $sessionId);
+        }
+
         if ($apiKey === '') {
             throw new RuntimeException('Whereby belum dikonfigurasi. Isi WHEREBY_API_KEY pada environment server.');
         }

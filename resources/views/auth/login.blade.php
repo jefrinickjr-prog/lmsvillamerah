@@ -216,50 +216,6 @@
       box-shadow: 0 22px 38px rgba(109, 93, 252, .34);
     }
 
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 28px 0 18px;
-      color: #8b8fa3;
-      font-size: 13px;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: #e5e7eb;
-    }
-
-    .social-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .social-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      min-height: 48px;
-      border: 1px solid #e7e8f3;
-      border-radius: 16px;
-      color: #374151;
-      background: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-    }
-
-    .social-btn:hover {
-      border-color: #c7d2fe;
-      box-shadow: 0 14px 30px rgba(79, 70, 229, .1);
-      transform: translateY(-1px);
-    }
-
     .register-note {
       margin-top: 22px;
       color: #6b7280;
@@ -542,19 +498,6 @@
 
             <button class="primary-btn" type="submit">Login Sekarang</button>
           </form>
-
-          <div class="divider">atau login dengan</div>
-
-          <div class="social-grid">
-            <a class="social-btn" href="#">
-              <i class="fa-brands fa-google" style="color:#ea4335" aria-hidden="true"></i>
-              Google
-            </a>
-            <a class="social-btn" href="#">
-              <i class="fa-brands fa-facebook" style="color:#1877f2" aria-hidden="true"></i>
-              Facebook
-            </a>
-          </div>
 
           <p class="register-note">
             Akun siswa dibuat oleh admin atau pengajar yang berwenang.
