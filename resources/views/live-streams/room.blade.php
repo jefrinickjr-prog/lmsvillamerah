@@ -64,7 +64,7 @@
               <i class="fa-solid fa-spinner fa-spin"></i>
               <h3>Memuat ruang video…</h3>
               <p id="meetingStatus">Menghubungkan ke layanan meeting. Kamera dan mikrofon dimulai dalam keadaan mati.</p>
-              <a id="meetingFallback" class="meeting-fallback" href="https://meet.jit.si/{{ $meetingRoom }}" target="_blank" rel="noopener">Buka Meeting di Tab Baru</a>
+              <button id="meetingFallback" class="meeting-fallback" type="button" onclick="window.location.reload()">Muat Ulang Meeting</button>
             </div>
           </div>
         </main>
@@ -80,7 +80,9 @@
     </section>
   </div>
 
-  <script src="https://meet.jit.si/external_api.js"></script>
+  @if ($meetingConfiguration)
+    <script src="{{ $meetingConfiguration['scriptUrl'] }}"></script>
+  @endif
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const loading = document.getElementById('meetingLoading');
@@ -94,14 +96,23 @@
         loading.querySelector('i').className = 'fa-solid fa-triangle-exclamation';
       };
 
+      const meetingConfiguration = @json($meetingConfiguration);
+      const configurationError = @json($meetingConfigurationError);
+
+      if (configurationError || !meetingConfiguration) {
+        showFailure(configurationError || 'Konfigurasi JaaS belum tersedia.');
+        return;
+      }
+
       if (typeof JitsiMeetExternalAPI === 'undefined') {
-        showFailure('Layanan meeting gagal dimuat. Buka meeting pada tab baru atau periksa koneksi internet.');
+        showFailure('Layanan meeting gagal dimuat. Muat ulang halaman atau periksa koneksi internet.');
         return;
       }
 
       try {
-        const api = new JitsiMeetExternalAPI('meet.jit.si', {
-          roomName: @json($meetingRoom),
+        const api = new JitsiMeetExternalAPI(meetingConfiguration.domain, {
+          roomName: meetingConfiguration.roomName,
+          jwt: meetingConfiguration.jwt,
           parentNode: document.getElementById('jitsiMeeting'),
           width: '100%',
           height: '100%',
@@ -114,6 +125,7 @@
             startWithVideoMuted: true,
             prejoinPageEnabled: false,
             disableDeepLinking: true,
+            brandingRoomAlias: meetingConfiguration.room,
           },
           interfaceConfigOverwrite: {
             MOBILE_APP_PROMO: false,
@@ -135,7 +147,7 @@
 
         window.setTimeout(() => {
           if (!loading.classList.contains('is-hidden')) {
-            status.textContent = 'Proses memuat lebih lama dari biasanya. Anda dapat membuka meeting pada tab baru.';
+            status.textContent = 'Proses memuat lebih lama dari biasanya. Muat ulang meeting atau periksa koneksi internet.';
             fallback.classList.add('is-visible');
           }
         }, 15000);

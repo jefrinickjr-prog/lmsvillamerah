@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'jaas' => [
+        'domain' => env('JAAS_DOMAIN', '8x8.vc'),
+        'app_id' => env('JAAS_APP_ID'),
+        'key_id' => env('JAAS_KEY_ID'),
+        'private_key' => env('JAAS_PRIVATE_KEY'),
+        'private_key_path' => env('JAAS_PRIVATE_KEY_PATH'),
+    ],
+
 ];

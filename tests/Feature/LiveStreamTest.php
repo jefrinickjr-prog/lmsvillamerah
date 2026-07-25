@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
+use App\Services\JaasJwtService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class LiveStreamTest extends TestCase
@@ -91,7 +93,7 @@ class LiveStreamTest extends TestCase
             ->get(route('live-streams.room', $session))
             ->assertOk()
             ->assertViewHas('isHost', true)
-            ->assertViewHas('meetingRoom')
+            ->assertViewHas('meetingConfiguration')
             ->assertSee('meeting-shell', false)
             ->assertSee('JitsiMeetExternalAPI', false)
             ->assertSee('startWithAudioMuted', false)
@@ -145,6 +147,7 @@ class LiveStreamTest extends TestCase
     public function test_student_and_host_receive_the_same_stable_meeting_room(): void
     {
         [$student, $session] = $this->makeSession();
+        $this->mockJaas($session);
         $teacher = $session->classroom->teacher;
 
         $this->actingAs($student)
@@ -154,14 +157,15 @@ class LiveStreamTest extends TestCase
         $hostResponse = $this->actingAs($teacher)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->viewData('meetingRoom');
+            ->viewData('meetingConfiguration');
         $studentResponse = $this->actingAs($student)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->viewData('meetingRoom');
+            ->viewData('meetingConfiguration');
 
-        $this->assertSame($hostResponse, $studentResponse);
-        $this->assertStringStartsWith('VillaMerah-LMS-'.$session->id.'-', $hostResponse);
+        $this->assertSame($hostResponse['roomName'], $studentResponse['roomName']);
+        $this->assertSame('test-app/villa-merah-lms-'.$session->id, $hostResponse['roomName']);
+        $this->assertNotSame($hostResponse['jwt'], $studentResponse['jwt']);
     }
 
     public function test_host_can_restart_an_ended_session_for_sixty_minutes(): void
@@ -208,5 +212,21 @@ class LiveStreamTest extends TestCase
         $session = LiveStreamSession::create(['classroom_id' => $classroom->id, 'title' => 'Live', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'started_at' => now(), 'started_by' => $teacher->id]);
 
         return [$student, $session];
+    }
+
+    private function mockJaas(LiveStreamSession $session): void
+    {
+        $service = Mockery::mock(JaasJwtService::class);
+        $service->shouldReceive('configurationFor')
+            ->twice()
+            ->andReturnUsing(fn ($liveStream, $user, $moderator) => [
+                'domain' => '8x8.vc',
+                'appId' => 'test-app',
+                'room' => 'villa-merah-lms-'.$session->id,
+                'roomName' => 'test-app/villa-merah-lms-'.$session->id,
+                'jwt' => $moderator ? 'host-token' : 'student-token',
+                'scriptUrl' => 'https://8x8.vc/test-app/external_api.js',
+            ]);
+        $this->app->instance(JaasJwtService::class, $service);
     }
 }

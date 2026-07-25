@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
+use App\Services\JaasJwtService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -141,7 +142,7 @@ class LiveStreamController extends Controller
         return redirect()->route('live-streams.room', $liveStream);
     }
 
-    public function room(LiveStreamSession $liveStream)
+    public function room(LiveStreamSession $liveStream, JaasJwtService $jaas)
     {
         $isHost = (int) $liveStream->started_by === Auth::id();
         $isManager = $this->canManage($liveStream->classroom);
@@ -155,10 +156,16 @@ class LiveStreamController extends Controller
                 ->withErrors(['live_stream' => 'Sesi live streaming sudah selesai. Host dapat menekan Mulai Ulang untuk membuka sesi selama 60 menit.']);
         }
 
-        $roomToken = substr(hash_hmac('sha256', 'live-stream:'.$liveStream->id, (string) config('app.key')), 0, 24);
-        $meetingRoom = 'VillaMerah-LMS-'.$liveStream->id.'-'.$roomToken;
+        $meetingConfiguration = null;
+        $meetingConfigurationError = null;
+        try {
+            $meetingConfiguration = $jaas->configurationFor($liveStream, Auth::user(), $isHost);
+        } catch (\RuntimeException $exception) {
+            report($exception);
+            $meetingConfigurationError = $exception->getMessage();
+        }
 
-        return view('live-streams.room', compact('liveStream', 'isHost', 'meetingRoom'));
+        return view('live-streams.room', compact('liveStream', 'isHost', 'meetingConfiguration', 'meetingConfigurationError'));
     }
 
     private function validateData(Request $request): array
