@@ -280,8 +280,8 @@
                 <img src="{{ asset('images/vm-logo-512.png') }}" alt="Logo Villa Merah" class="brand-logo h-12 w-12">
               </div>
               <div class="sidebar-label min-w-0">
-                <div class="text-base font-extrabold tracking-tight">E-learning</div>
-                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Bimbingan Gambar Villa Merah</div>
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">BIMBEL GAMBAR</div>
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">VILLA MERAH</div>
               </div>
               <label id="sidebarClose" data-sidebar-close for="sidebarToggle" class="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden" aria-label="Tutup sidebar" role="button" tabindex="0">
                 <i class="fa-solid fa-xmark"></i>

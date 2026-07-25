@@ -19,7 +19,7 @@
                   <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-[#FFFAF5] p-6">
                     <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                       <div class="px-6 lg:px-12 py-10">
-                        <h1 class="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-4">E-learning Bimbingan Gambar Villa Merah</h1>
+                        <h1 class="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-4">BIMBEL GAMBAR VILLA MERAH</h1>
                         <p class="text-lg text-slate-600 mb-6">Belajar teknik menggambar langkah demi langkah dari pengajar profesional. Bergabunglah untuk mengakses video pembelajaran, tugas, dan penilaian interaktif.</p>
 
                         <div class="flex gap-3">
