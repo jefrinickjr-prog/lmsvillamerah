@@ -78,11 +78,23 @@ class JaasJwtService
             throw new RuntimeException('File JAAS_PRIVATE_KEY_PATH tidak dapat dibaca oleh aplikasi.');
         }
 
-        return (string) file_get_contents($path);
+        $contents = @file_get_contents($path);
+        if ($contents === false) {
+            throw new RuntimeException('Private key JaaS gagal dibaca. Periksa path dan izin file.');
+        }
+
+        return $this->normalizePrivateKey($contents);
     }
 
     private function encode(array $payload, string $keyId, string $privateKey): string
     {
+        $key = @openssl_pkey_get_private($this->normalizePrivateKey($privateKey));
+        if ($key === false) {
+            throw new RuntimeException(
+                'Private key JaaS tidak valid. Gunakan file private key PEM yang diawali BEGIN PRIVATE KEY atau BEGIN RSA PRIVATE KEY, bukan file .pub.'
+            );
+        }
+
         $header = ['alg' => 'RS256', 'kid' => $keyId, 'typ' => 'JWT'];
         $segments = [
             $this->base64Url(json_encode($header, JSON_THROW_ON_ERROR)),
@@ -90,7 +102,7 @@ class JaasJwtService
         ];
         $signingInput = implode('.', $segments);
 
-        if (! openssl_sign($signingInput, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+        if (! @openssl_sign($signingInput, $signature, $key, OPENSSL_ALGO_SHA256)) {
             throw new RuntimeException('Private key JaaS tidak valid atau gagal digunakan untuk menandatangani JWT.');
         }
 
@@ -102,5 +114,17 @@ class JaasJwtService
     private function base64Url(string $value): string
     {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    private function normalizePrivateKey(string $privateKey): string
+    {
+        $privateKey = preg_replace('/^\xEF\xBB\xBF/', '', trim($privateKey)) ?? trim($privateKey);
+
+        // Mendukung nilai environment yang menyimpan line break sebagai "\n".
+        if (! str_contains($privateKey, "\n") && str_contains($privateKey, '\\n')) {
+            $privateKey = str_replace('\\n', "\n", $privateKey);
+        }
+
+        return $privateKey;
     }
 }
