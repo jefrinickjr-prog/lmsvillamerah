@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       parentNode: document.getElementById('jitsiMeeting'),
       width: '100%',
       height: '100%',
+      onload: () => loading.classList.add('is-hidden'),
       lang: 'id',
       userInfo: {
         displayName: @json(auth()->user()->name),
