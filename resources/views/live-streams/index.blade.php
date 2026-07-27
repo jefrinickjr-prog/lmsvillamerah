@@ -44,11 +44,11 @@
             @csrf
             <button
               type="submit"
-              @disabled($ended || $notOpen || $full)
-              class="btn-action btn-download-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended || $notOpen || $full ? 'cursor-not-allowed opacity-50' : '' }}"
+              @disabled($ended || $notOpen || $full || $session->current_user_joined)
+              class="btn-action btn-download-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended || $notOpen || $full || $session->current_user_joined ? 'cursor-not-allowed opacity-50' : '' }}"
             >
-              <i class="fa-solid fa-{{ $session->current_user_joined ? 'right-to-bracket' : 'video' }}"></i>
-              <span>{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar Memulai' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Masuk Kembali ke Live' : 'Join Live Streaming'))) }}</span>
+              <i class="fa-solid fa-{{ $session->current_user_joined ? 'circle-check' : 'video' }}"></i>
+              <span>{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar Memulai' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Kesempatan Masuk Sudah Digunakan' : 'Join Live Streaming'))) }}</span>
             </button>
           </form>
         @else

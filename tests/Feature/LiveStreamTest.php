@@ -54,6 +54,32 @@ class LiveStreamTest extends TestCase
             ->assertSessionHasErrors('live_stream');
     }
 
+    public function test_student_can_join_and_open_a_live_room_only_once(): void
+    {
+        [$student, $session] = $this->makeSession();
+
+        $this->actingAs($student)
+            ->post(route('live-streams.join', $session))
+            ->assertRedirect(route('live-streams.room', $session));
+
+        $this->actingAs($student)
+            ->get(route('live-streams.room', $session))
+            ->assertOk();
+
+        $this->actingAs($student)
+            ->get(route('live-streams.room', $session))
+            ->assertStatus(429);
+
+        $this->actingAs($student)
+            ->post(route('live-streams.join', $session))
+            ->assertSessionHasErrors('live_stream');
+
+        $this->actingAs($student)
+            ->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Kesempatan Masuk Sudah Digunakan');
+    }
+
     public function test_super_admin_can_edit_and_start_live_stream(): void
     {
         [, $session] = $this->makeSession();

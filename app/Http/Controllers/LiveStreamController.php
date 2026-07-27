@@ -143,7 +143,9 @@ class LiveStreamController extends Controller
         DB::transaction(function () use ($liveStream) {
             $session = LiveStreamSession::whereKey($liveStream->id)->lockForUpdate()->firstOrFail();
             if ($session->participants()->whereKey(Auth::id())->exists()) {
-                return;
+                throw ValidationException::withMessages([
+                    'live_stream' => 'Akun Anda sudah menggunakan kesempatan masuk untuk sesi ini.',
+                ]);
             }
             if ($session->participants()->count() >= LiveStreamSession::MAX_PARTICIPANTS) {
                 throw ValidationException::withMessages(['live_stream' => 'Ruang sudah penuh (maksimal 20 peserta).']);
@@ -169,6 +171,16 @@ class LiveStreamController extends Controller
         }
 
         abort_unless($liveStream->started_at && $liveStream->started_by, 403, 'Pengajar belum memulai sesi.');
+
+        if ($isParticipant) {
+            $claimed = DB::table('live_stream_participants')
+                ->where('live_stream_session_id', $liveStream->id)
+                ->where('user_id', Auth::id())
+                ->whereNull('entered_at')
+                ->update(['entered_at' => now(), 'updated_at' => now()]);
+
+            abort_unless($claimed === 1, 429, 'Akun siswa hanya dapat membuka ruang satu kali untuk setiap sesi.');
+        }
 
         $roomAlias = sprintf(
             '%s-%d-%s',
