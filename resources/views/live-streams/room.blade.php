@@ -11,7 +11,7 @@
   <section class="meeting-shell">
     <header class="meeting-header">
       <div>
-        <p class="meeting-eyebrow">Jitsi Meet · Beta Villa Merah</p>
+        <p class="meeting-eyebrow">Pembelajaran Online Bimbel Gambar Villa Merah</p>
         <h2 class="meeting-title">{{ $liveStream->title }}</h2>
         <p class="meeting-subtitle">{{ $liveStream->classroom->title }} · {{ $liveStream->classroom->branch }}</p>
       </div>

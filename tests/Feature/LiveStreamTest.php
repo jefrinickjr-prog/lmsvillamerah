@@ -97,7 +97,7 @@ class LiveStreamTest extends TestCase
             ->assertSee('JitsiMeetExternalAPI', false)
             ->assertSee('meet.jit.si/external_api.js', false)
             ->assertSee("onload: () => loading.classList.add('is-hidden')", false)
-            ->assertSee('Jitsi Meet · Beta Villa Merah')
+            ->assertSee('Pembelajaran Online Bimbel Gambar Villa Merah')
             ->assertSee('Keluar dari Ruang')
             ->assertDontSee('whereby.com', false);
     }
