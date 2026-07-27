@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
-use App\Services\WherebyMeetingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,12 +33,20 @@ class LiveStreamController extends Controller
                 $q->where('delivery_mode', 'online')
                     ->where('program_type', User::normalizeProgramType($user->program_type))
                     ->where(function ($title) use ($classKeys) {
-                        if ($classKeys === []) return $title->whereRaw('1 = 0');
-                        foreach ($classKeys as $key) $title->orWhereRaw('LOWER(TRIM(title)) = ?', [$key]);
+                        if ($classKeys === []) {
+                            return $title->whereRaw('1 = 0');
+                        }
+                        foreach ($classKeys as $key) {
+                            $title->orWhereRaw('LOWER(TRIM(title)) = ?', [$key]);
+                        }
                     })
                     ->where(function ($branch) use ($branchKeys) {
-                        if ($branchKeys === []) return $branch->whereRaw('1 = 0');
-                        foreach ($branchKeys as $key) $branch->orWhereRaw('LOWER(TRIM(branch)) = ?', [$key]);
+                        if ($branchKeys === []) {
+                            return $branch->whereRaw('1 = 0');
+                        }
+                        foreach ($branchKeys as $key) {
+                            $branch->orWhereRaw('LOWER(TRIM(branch)) = ?', [$key]);
+                        }
                     });
             });
         }
@@ -85,9 +92,6 @@ class LiveStreamController extends Controller
         $classroom = Classroom::findOrFail($data['classroom_id']);
         abort_unless($this->canManage($classroom), 403);
         $liveStream->update($data + [
-            'meeting_url' => null,
-            'whereby_meeting_id' => null,
-            'whereby_host_url' => null,
             'started_at' => null,
             'started_by' => null,
         ]);
@@ -95,26 +99,18 @@ class LiveStreamController extends Controller
         return redirect()->route('live-streams.index')->with('success', 'Jadwal live streaming berhasil diperbarui.');
     }
 
-    public function start(LiveStreamSession $liveStream, WherebyMeetingService $whereby)
+    public function start(LiveStreamSession $liveStream)
     {
         abort_unless($this->canManage($liveStream->classroom), 403);
 
         $restarting = now()->gt($liveStream->ends_at);
         $endsAt = $restarting ? now()->addHour() : $liveStream->ends_at;
-        $needsRoom = $restarting || ! $liveStream->meeting_url || ! $liveStream->whereby_host_url;
-
-        try {
-            $meeting = $needsRoom ? $whereby->create($endsAt, $liveStream->id) : [];
-        } catch (\RuntimeException $exception) {
-            return back()->withErrors(['live_stream' => $exception->getMessage()]);
-        }
-
-        DB::transaction(function () use ($liveStream, $restarting, $endsAt, $meeting) {
+        DB::transaction(function () use ($liveStream, $restarting, $endsAt) {
             $session = LiveStreamSession::whereKey($liveStream->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $session->update($meeting + [
+            $session->update([
                 'started_at' => $restarting ? now() : ($session->started_at ?? now()),
                 'started_by' => Auth::id(),
                 'ends_at' => $endsAt,
@@ -132,6 +128,7 @@ class LiveStreamController extends Controller
     {
         abort_unless($this->canManage($liveStream->classroom), 403);
         $liveStream->delete();
+
         return back()->with('success', 'Jadwal live streaming berhasil dihapus.');
     }
 
@@ -144,7 +141,9 @@ class LiveStreamController extends Controller
 
         DB::transaction(function () use ($liveStream) {
             $session = LiveStreamSession::whereKey($liveStream->id)->lockForUpdate()->firstOrFail();
-            if ($session->participants()->whereKey(Auth::id())->exists()) return;
+            if ($session->participants()->whereKey(Auth::id())->exists()) {
+                return;
+            }
             if ($session->participants()->count() >= LiveStreamSession::MAX_PARTICIPANTS) {
                 throw ValidationException::withMessages(['live_stream' => 'Ruang sudah penuh (maksimal 20 peserta).']);
             }
@@ -168,12 +167,19 @@ class LiveStreamController extends Controller
                 ->withErrors(['live_stream' => 'Sesi live streaming sudah selesai. Host dapat menekan Mulai Ulang untuk membuka sesi selama 60 menit.']);
         }
 
-        $meetingRoomUrl = $isHost ? $liveStream->whereby_host_url : $liveStream->meeting_url;
-        $meetingConfigurationError = $meetingRoomUrl
-            ? null
-            : 'Ruang Whereby belum dibuat. Host perlu menekan Mulai Live terlebih dahulu.';
+        abort_unless($liveStream->started_at && $liveStream->started_by, 403, 'Pengajar belum memulai sesi.');
 
-        return view('live-streams.room', compact('liveStream', 'isHost', 'meetingRoomUrl', 'meetingConfigurationError'));
+        return view('live-streams.room', [
+            'liveStream' => $liveStream,
+            'isHost' => $isHost,
+            'jitsiDomain' => config('jitsi.domain'),
+            'jitsiRoomName' => sprintf(
+                '%s-%d-%s',
+                config('jitsi.room_prefix'),
+                $liveStream->id,
+                substr(hash_hmac('sha256', 'live-stream-'.$liveStream->id, config('app.key')), 0, 24)
+            ),
+        ]);
     }
 
     private function validateData(Request $request): array
@@ -204,11 +210,11 @@ class LiveStreamController extends Controller
     private function studentCanAccess(Classroom $classroom): bool
     {
         $user = Auth::user();
+
         return $classroom->delivery_mode === 'online'
             && ($user->delivery_mode ?? 'offline') === 'online'
             && $classroom->program_type === User::normalizeProgramType($user->program_type)
             && in_array(User::normalizeStudentClass($classroom->title), User::studentClassLookupKeys($user->student_class), true)
             && in_array(User::normalizeBranch($classroom->branch), User::branchLookupKeys($user->branch), true);
     }
-
 }

@@ -6,30 +6,11 @@ use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class LiveStreamTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Config::set('services.whereby', [
-            'api_key' => 'test-whereby-key',
-            'api_url' => 'https://api.whereby.dev/v1',
-        ]);
-        Http::fake([
-            'api.whereby.dev/*' => Http::response([
-                'meetingId' => 'whereby-meeting-123',
-                'roomUrl' => 'https://villamerah.whereby.com/test-room',
-                'hostRoomUrl' => 'https://villamerah.whereby.com/test-room?roomKey=host-secret',
-            ], 201),
-        ]);
-    }
 
     public function test_matching_online_student_can_join_live_stream(): void
     {
@@ -110,15 +91,14 @@ class LiveStreamTest extends TestCase
             ->get(route('live-streams.room', $session))
             ->assertOk()
             ->assertViewHas('isHost', true)
-            ->assertViewHas('meetingRoomUrl')
             ->assertSee('meeting-shell', false)
-            ->assertSee('whereby-embed', false)
-            ->assertSee('cdn.srv.whereby.com', false)
+            ->assertViewHas('jitsiDomain', 'meet.jit.si')
+            ->assertViewHas('jitsiRoomName')
+            ->assertSee('JitsiMeetExternalAPI', false)
+            ->assertSee('meet.jit.si/external_api.js', false)
+            ->assertSee('Jitsi Meet · Beta Villa Merah')
             ->assertSee('Keluar dari Ruang')
-            ->assertDontSee('meet.jit.si', false)
-            ->assertDontSee('8x8.vc', false)
-            ->assertDontSee('RTCPeerConnection', false)
-            ->assertDontSee('setRemoteDescription', false);
+            ->assertDontSee('whereby.com', false);
     }
 
     public function test_assigned_teacher_can_create_schedule_and_start_as_host(): void
@@ -162,7 +142,7 @@ class LiveStreamTest extends TestCase
             ->assertSee(route('live-streams.start', $session), false);
     }
 
-    public function test_student_and_host_receive_the_same_stable_meeting_room(): void
+    public function test_host_and_student_receive_the_same_private_jitsi_room_name(): void
     {
         [$student, $session] = $this->makeSession();
         $teacher = $session->classroom->teacher;
@@ -171,17 +151,22 @@ class LiveStreamTest extends TestCase
             ->post(route('live-streams.join', $session))
             ->assertRedirect(route('live-streams.room', $session));
 
-        $hostResponse = $this->actingAs($teacher)
+        $hostRoom = $this->actingAs($teacher)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->viewData('meetingRoomUrl');
-        $studentResponse = $this->actingAs($student)
+            ->viewData('jitsiRoomName');
+        $studentRoom = $this->actingAs($student)
             ->get(route('live-streams.room', $session))
             ->assertOk()
-            ->viewData('meetingRoomUrl');
+            ->viewData('jitsiRoomName');
 
-        $this->assertSame('https://villamerah.whereby.com/class-room', $studentResponse);
-        $this->assertSame('https://villamerah.whereby.com/class-room?roomKey=host-secret', $hostResponse);
+        $outsider = User::factory()->create(['role' => 'student']);
+        $this->actingAs($outsider)
+            ->get(route('live-streams.room', $session))
+            ->assertForbidden();
+
+        $this->assertSame($hostRoom, $studentRoom);
+        $this->assertMatchesRegularExpression('/^VillaMerahBeta-\d+-[a-f0-9]{24}$/', $hostRoom);
     }
 
     public function test_host_can_restart_an_ended_session_for_sixty_minutes(): void
@@ -228,9 +213,6 @@ class LiveStreamTest extends TestCase
         $session = LiveStreamSession::create([
             'classroom_id' => $classroom->id,
             'title' => 'Live',
-            'meeting_url' => 'https://villamerah.whereby.com/class-room',
-            'whereby_meeting_id' => 'meeting-id',
-            'whereby_host_url' => 'https://villamerah.whereby.com/class-room?roomKey=host-secret',
             'starts_at' => now()->subMinute(),
             'ends_at' => now()->addHour(),
             'started_at' => now(),

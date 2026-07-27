@@ -6,8 +6,8 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ClassroomController;
-use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\LiveStreamController;
+use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentManagementController;
@@ -43,7 +43,7 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
         return app(StudentController::class)->dashboard();
     })->name('dashboard');
 
-    Route::resource('classrooms', ClassroomController::class)->only(['index','create','store','edit','update','destroy']);
+    Route::resource('classrooms', ClassroomController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::get('live-streams', [LiveStreamController::class, 'index'])->name('live-streams.index');
     Route::post('live-streams', [LiveStreamController::class, 'store'])->name('live-streams.store');
     Route::get('live-streams/{liveStream}/edit', [LiveStreamController::class, 'edit'])->name('live-streams.edit');
@@ -52,11 +52,11 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::get('live-streams/{liveStream}/room', [LiveStreamController::class, 'room'])->name('live-streams.room');
     Route::post('live-streams/{liveStream}/join', [LiveStreamController::class, 'join'])->name('live-streams.join');
     Route::delete('live-streams/{liveStream}', [LiveStreamController::class, 'destroy'])->name('live-streams.destroy');
-    Route::resource('students', StudentManagementController::class)->only(['index','edit','update']);
-    Route::resource('materials', MaterialController::class)->only(['index','create','store','edit','update','destroy']);
+    Route::resource('students', StudentManagementController::class)->only(['index', 'edit', 'update']);
+    Route::resource('materials', MaterialController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::get('tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');
     Route::post('tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
-    Route::resource('tasks', TaskController::class)->only(['index','show','create','store','edit','update','destroy']);
+    Route::resource('tasks', TaskController::class)->only(['index', 'show', 'create', 'store', 'edit', 'update', 'destroy']);
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -77,4 +77,6 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
 });
 
 // Public helper route
-Route::get('/health', function () { return 'ok'; });
+Route::get('/health', function () {
+    return 'ok';
+});

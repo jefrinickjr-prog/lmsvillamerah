@@ -8,7 +8,7 @@ class LiveStreamSession extends Model
 {
     public const MAX_PARTICIPANTS = 20;
 
-    protected $fillable = ['classroom_id', 'title', 'meeting_url', 'whereby_meeting_id', 'whereby_host_url', 'starts_at', 'ends_at', 'started_at', 'started_by'];
+    protected $fillable = ['classroom_id', 'title', 'starts_at', 'ends_at', 'started_at', 'started_by'];
 
     protected function casts(): array
     {
@@ -16,7 +16,6 @@ class LiveStreamSession extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'started_at' => 'datetime',
-            'whereby_host_url' => 'encrypted',
         ];
     }
 
@@ -29,5 +28,4 @@ class LiveStreamSession extends Model
     {
         return $this->belongsToMany(User::class, 'live_stream_participants')->withTimestamps();
     }
-
 }
