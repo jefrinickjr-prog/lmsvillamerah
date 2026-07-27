@@ -54,9 +54,10 @@ class LiveStreamTest extends TestCase
             ->assertSessionHasErrors('live_stream');
     }
 
-    public function test_student_can_join_and_open_a_live_room_only_once(): void
+    public function test_student_needs_manager_approval_each_time_they_rejoin(): void
     {
         [$student, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
 
         $this->actingAs($student)
             ->post(route('live-streams.join', $session))
@@ -67,17 +68,52 @@ class LiveStreamTest extends TestCase
             ->assertOk();
 
         $this->actingAs($student)
-            ->get(route('live-streams.room', $session))
-            ->assertStatus(429);
+            ->post(route('live-streams.rejoin.request', $session))
+            ->assertRedirect();
 
-        $this->actingAs($student)
-            ->post(route('live-streams.join', $session))
-            ->assertSessionHasErrors('live_stream');
+        $this->assertDatabaseHas('live_stream_participants', [
+            'live_stream_session_id' => $session->id,
+            'user_id' => $student->id,
+            'rejoin_status' => 'pending',
+        ]);
 
         $this->actingAs($student)
             ->get(route('live-streams.index'))
             ->assertOk()
-            ->assertSee('Kesempatan Masuk Sudah Digunakan');
+            ->assertSee('Pending Persetujuan Admin');
+
+        $this->actingAs($teacher)
+            ->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Permintaan Masuk Kembali')
+            ->assertSee($student->name);
+
+        $this->actingAs($teacher)
+            ->put(route('live-streams.rejoin.approve', [$session, $student]))
+            ->assertRedirect();
+
+        $this->actingAs($student)
+            ->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Masuk Kembali — Disetujui');
+
+        $this->actingAs($student)
+            ->get(route('live-streams.room', $session))
+            ->assertOk();
+
+        $this->actingAs($student)
+            ->get(route('live-streams.room', $session))
+            ->assertStatus(429);
+
+        $this->actingAs($student)
+            ->post(route('live-streams.rejoin.request', $session))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('live_stream_participants', [
+            'live_stream_session_id' => $session->id,
+            'user_id' => $student->id,
+            'rejoin_status' => 'pending',
+        ]);
     }
 
     public function test_super_admin_can_edit_and_start_live_stream(): void

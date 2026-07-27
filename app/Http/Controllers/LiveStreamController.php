@@ -17,7 +17,7 @@ class LiveStreamController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $query = LiveStreamSession::with(['classroom.teacher'])
+        $query = LiveStreamSession::with(['classroom.teacher', 'participants'])
             ->withCount('participants')
             ->withExists(['participants as current_user_joined' => fn ($query) => $query->whereKey(Auth::id())])
             ->orderBy('starts_at');
@@ -177,7 +177,11 @@ class LiveStreamController extends Controller
                 ->where('live_stream_session_id', $liveStream->id)
                 ->where('user_id', Auth::id())
                 ->whereNull('entered_at')
-                ->update(['entered_at' => now(), 'updated_at' => now()]);
+                ->update([
+                    'entered_at' => now(),
+                    'rejoin_status' => 'used',
+                    'updated_at' => now(),
+                ]);
 
             abort_unless($claimed === 1, 429, 'Akun siswa hanya dapat membuka ruang satu kali untuk setiap sesi.');
         }
@@ -204,6 +208,58 @@ class LiveStreamController extends Controller
                 : null,
             'usingJaas' => $usingJaas,
         ]);
+    }
+
+    public function requestRejoin(LiveStreamSession $liveStream)
+    {
+        abort_unless($this->isStudentRole(Auth::user()?->role), 403);
+        abort_unless($this->studentCanAccess($liveStream->classroom), 403);
+        abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
+
+        $participant = DB::table('live_stream_participants')
+            ->where('live_stream_session_id', $liveStream->id)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        abort_unless($participant && $participant->entered_at, 422, 'Akun belum pernah memasuki sesi ini.');
+
+        if ($participant->rejoin_status === 'pending') {
+            return back()->withErrors(['live_stream' => 'Permintaan masuk kembali masih menunggu persetujuan.']);
+        }
+
+        DB::table('live_stream_participants')
+            ->where('id', $participant->id)
+            ->update([
+                'rejoin_status' => 'pending',
+                'rejoin_requested_at' => now(),
+                'rejoin_approved_at' => null,
+                'rejoin_approved_by' => null,
+                'updated_at' => now(),
+            ]);
+
+        return back()->with('success', 'Permintaan masuk kembali dikirim. Tunggu persetujuan admin atau pengajar.');
+    }
+
+    public function approveRejoin(LiveStreamSession $liveStream, User $student)
+    {
+        abort_unless($this->canManage($liveStream->classroom), 403);
+        abort_if(now()->gt($liveStream->ends_at), 410, 'Sesi live streaming sudah selesai.');
+
+        $updated = DB::table('live_stream_participants')
+            ->where('live_stream_session_id', $liveStream->id)
+            ->where('user_id', $student->id)
+            ->where('rejoin_status', 'pending')
+            ->update([
+                'entered_at' => null,
+                'rejoin_status' => 'approved',
+                'rejoin_approved_at' => now(),
+                'rejoin_approved_by' => Auth::id(),
+                'updated_at' => now(),
+            ]);
+
+        abort_unless($updated === 1, 422, 'Permintaan masuk kembali tidak ditemukan atau sudah diproses.');
+
+        return back()->with('success', 'Permintaan masuk kembali '.$student->name.' telah disetujui.');
     }
 
     private function validateData(Request $request): array

@@ -33,24 +33,43 @@
 
   <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     @forelse($sessions as $session)
-      @php $ended = now()->gt($session->ends_at); $notOpen = ! $session->started_at; $full = $session->participants_count >= 20 && ! $session->current_user_joined; @endphp
+      @php
+        $ended = now()->gt($session->ends_at);
+        $notOpen = ! $session->started_at;
+        $full = $session->participants_count >= 20 && ! $session->current_user_joined;
+        $currentParticipant = $session->participants->firstWhere('id', auth()->id());
+        $pendingRejoins = $session->participants->filter(fn ($participant) => $participant->pivot->rejoin_status === 'pending');
+      @endphp
       <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
         <div class="flex items-start justify-between gap-3"><div class="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-rose-600"><i class="fa-solid fa-video"></i></div><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $session->participants_count }}/20 peserta</span></div>
         <h3 class="mt-5 text-lg font-black">{{ $session->title }}</h3>
         <p class="mt-1 text-sm font-bold text-indigo-600">{{ $session->classroom->title }} · {{ $session->classroom->branch }}</p>
         <div class="mt-4 space-y-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"><div><i class="fa-regular fa-calendar mr-2"></i>{{ $session->starts_at->format('d M Y') }}</div><div><i class="fa-regular fa-clock mr-2"></i>{{ $session->starts_at->format('H:i') }}–{{ $session->ends_at->format('H:i') }} WIB</div></div>
         @if(in_array(strtolower(trim((string) auth()->user()->role)), ['student', 'siswa'], true))
-          <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">
-            @csrf
-            <button
-              type="submit"
-              @disabled($ended || $notOpen || $full || $session->current_user_joined)
-              class="btn-action btn-download-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended || $notOpen || $full || $session->current_user_joined ? 'cursor-not-allowed opacity-50' : '' }}"
-            >
-              <i class="fa-solid fa-{{ $session->current_user_joined ? 'circle-check' : 'video' }}"></i>
-              <span>{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar Memulai' : ($full ? 'Ruang Penuh' : ($session->current_user_joined ? 'Kesempatan Masuk Sudah Digunakan' : 'Join Live Streaming'))) }}</span>
+          @if($currentParticipant?->pivot->rejoin_status === 'approved' && ! $currentParticipant?->pivot->entered_at)
+            <a href="{{ route('live-streams.room', $session) }}" class="btn-action btn-approve-solid mt-4 min-h-12 w-full rounded-2xl px-4 py-3 text-sm">
+              <i class="fa-solid fa-right-to-bracket"></i><span>Masuk Kembali — Disetujui</span>
+            </a>
+          @elseif($currentParticipant?->pivot->rejoin_status === 'pending')
+            <button disabled class="btn-action mt-4 min-h-12 w-full cursor-not-allowed rounded-2xl bg-amber-100 px-4 py-3 text-sm text-amber-700 opacity-80">
+              <i class="fa-solid fa-clock"></i><span>Pending Persetujuan Admin</span>
             </button>
-          </form>
+          @elseif($session->current_user_joined)
+            <form method="POST" action="{{ route('live-streams.rejoin.request', $session) }}" class="mt-4">
+              @csrf
+              <button type="submit" @disabled($ended) class="btn-action btn-download-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended ? 'cursor-not-allowed opacity-50' : '' }}">
+                <i class="fa-solid fa-paper-plane"></i><span>{{ $ended ? 'Sesi Selesai' : 'Ajukan Masuk Kembali' }}</span>
+              </button>
+            </form>
+          @else
+            <form method="POST" action="{{ route('live-streams.join', $session) }}" class="mt-4">
+              @csrf
+              <button type="submit" @disabled($ended || $notOpen || $full) class="btn-action btn-download-solid min-h-12 w-full rounded-2xl px-4 py-3 text-sm {{ $ended || $notOpen || $full ? 'cursor-not-allowed opacity-50' : '' }}">
+                <i class="fa-solid fa-video"></i>
+                <span>{{ $ended ? 'Sesi Selesai' : ($notOpen ? 'Menunggu Pengajar Memulai' : ($full ? 'Ruang Penuh' : 'Join Live Streaming')) }}</span>
+              </button>
+            </form>
+          @endif
         @else
           <div class="mt-4 grid gap-2 sm:grid-cols-2">
             <form method="POST" action="{{ route('live-streams.start', $session) }}">
@@ -66,6 +85,21 @@
             <a href="{{ route('live-streams.edit', $session) }}" class="inline-flex items-center justify-center rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-black text-indigo-700"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit</a>
           </div>
           <form method="POST" action="{{ route('live-streams.destroy', $session) }}" class="mt-2" onsubmit="return confirm('Hapus jadwal ini?')">@csrf @method('DELETE')<button class="w-full rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">Hapus Jadwal</button></form>
+          @if($pendingRejoins->isNotEmpty())
+            <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3">
+              <p class="text-xs font-black uppercase tracking-wider text-amber-700">Permintaan Masuk Kembali</p>
+              <div class="mt-2 space-y-2">
+                @foreach($pendingRejoins as $participant)
+                  <form method="POST" action="{{ route('live-streams.rejoin.approve', [$session, $participant]) }}" class="flex items-center justify-between gap-2 rounded-xl bg-white p-2">
+                    @csrf
+                    @method('PUT')
+                    <span class="min-w-0 truncate text-xs font-black text-slate-700">{{ $participant->name }}</span>
+                    <button type="submit" class="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white">Setujui</button>
+                  </form>
+                @endforeach
+              </div>
+            </div>
+          @endif
         @endif
       </article>
     @empty

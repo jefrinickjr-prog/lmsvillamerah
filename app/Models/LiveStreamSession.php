@@ -26,6 +26,8 @@ class LiveStreamSession extends Model
 
     public function participants()
     {
-        return $this->belongsToMany(User::class, 'live_stream_participants')->withTimestamps();
+        return $this->belongsToMany(User::class, 'live_stream_participants')
+            ->withPivot(['entered_at', 'rejoin_status', 'rejoin_requested_at', 'rejoin_approved_at', 'rejoin_approved_by'])
+            ->withTimestamps();
     }
 }

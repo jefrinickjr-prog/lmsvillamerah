@@ -51,6 +51,8 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::post('live-streams/{liveStream}/start', [LiveStreamController::class, 'start'])->name('live-streams.start');
     Route::get('live-streams/{liveStream}/room', [LiveStreamController::class, 'room'])->name('live-streams.room');
     Route::post('live-streams/{liveStream}/join', [LiveStreamController::class, 'join'])->name('live-streams.join');
+    Route::post('live-streams/{liveStream}/rejoin-request', [LiveStreamController::class, 'requestRejoin'])->name('live-streams.rejoin.request');
+    Route::put('live-streams/{liveStream}/rejoin-requests/{student}/approve', [LiveStreamController::class, 'approveRejoin'])->name('live-streams.rejoin.approve');
     Route::delete('live-streams/{liveStream}', [LiveStreamController::class, 'destroy'])->name('live-streams.destroy');
     Route::resource('students', StudentManagementController::class)->only(['index', 'edit', 'update']);
     Route::resource('materials', MaterialController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
