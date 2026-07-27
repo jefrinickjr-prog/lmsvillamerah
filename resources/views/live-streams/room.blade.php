@@ -36,13 +36,13 @@
         <div class="meeting-info"><div class="meeting-label">Status Anda</div><div class="meeting-value">{{ $isHost ? 'Host/Penyelenggara' : 'Peserta' }}</div></div>
         <div class="meeting-info"><div class="meeting-label">Jadwal</div><div class="meeting-value">{{ $liveStream->starts_at->format('d M Y, H:i') }}–{{ $liveStream->ends_at->format('H:i') }} WIB</div></div>
         <div class="meeting-info"><div class="meeting-label">Akses</div><div class="meeting-value">Khusus akun LMS pada kelas ini</div></div>
-        <div class="meeting-tip"><i class="fa-solid fa-flask mr-2"></i>Fase Beta menggunakan infrastruktur publik Jitsi. Jangan membagikan alamat atau nama ruang kepada pihak di luar kelas.</div>
+        <div class="meeting-tip"><i class="fa-solid fa-shield-halved mr-2"></i>{{ $usingJaas ? 'Meeting menggunakan Jitsi as a Service dengan akses akun LMS dan token sementara.' : 'Mode uji publik aktif. Konfigurasikan kredensial 8x8/JaaS agar durasi meeting tidak dibatasi lima menit.' }}</div>
       </aside>
     </div>
   </section>
 </div>
 
-<script src="https://{{ $jitsiDomain }}/external_api.js"></script>
+<script src="{{ $jitsiScriptUrl }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const loading = document.getElementById('meetingLoading');
@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const api = new JitsiMeetExternalAPI(@json($jitsiDomain), {
       roomName: @json($jitsiRoomName),
+      jwt: @json($jitsiJwt),
       parentNode: document.getElementById('jitsiMeeting'),
       width: '100%',
       height: '100%',

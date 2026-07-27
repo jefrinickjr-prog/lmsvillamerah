@@ -6,6 +6,7 @@ use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class LiveStreamTest extends TestCase
@@ -168,6 +169,49 @@ class LiveStreamTest extends TestCase
 
         $this->assertSame($hostRoom, $studentRoom);
         $this->assertMatchesRegularExpression('/^VillaMerahBeta-\d+-[a-f0-9]{24}$/', $hostRoom);
+    }
+
+    public function test_jaas_uses_app_namespace_and_signed_user_token(): void
+    {
+        [, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $privateKey = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        if ($privateKey === false) {
+            $this->markTestSkipped('OpenSSL pada environment ini tidak dapat membuat RSA test key.');
+        }
+        openssl_pkey_export($privateKey, $privateKeyPem);
+
+        Config::set('jitsi', [
+            'domain' => '8x8.vc',
+            'room_prefix' => 'VillaMerahBeta',
+            'app_id' => 'vpaas-magic-cookie-test',
+            'key_id' => 'vpaas-magic-cookie-test/key-id',
+            'private_key_path' => null,
+            'private_key_base64' => base64_encode($privateKeyPem),
+            'max_token_hours' => 6,
+        ]);
+
+        $response = $this->actingAs($teacher)
+            ->get(route('live-streams.room', $session))
+            ->assertOk()
+            ->assertViewHas('usingJaas', true)
+            ->assertViewHas('jitsiDomain', '8x8.vc')
+            ->assertSee('https://8x8.vc/vpaas-magic-cookie-test/external_api.js', false);
+
+        $this->assertStringStartsWith(
+            'vpaas-magic-cookie-test/VillaMerahBeta-',
+            $response->viewData('jitsiRoomName')
+        );
+
+        [$encodedHeader, $encodedPayload] = explode('.', $response->viewData('jitsiJwt'));
+        $header = json_decode(base64_decode(strtr($encodedHeader, '-_', '+/')), true);
+        $payload = json_decode(base64_decode(strtr($encodedPayload, '-_', '+/')), true);
+
+        $this->assertSame('RS256', $header['alg']);
+        $this->assertSame('vpaas-magic-cookie-test/key-id', $header['kid']);
+        $this->assertSame('vpaas-magic-cookie-test', $payload['sub']);
+        $this->assertSame((string) $teacher->id, $payload['context']['user']['id']);
+        $this->assertTrue($payload['context']['user']['moderator']);
     }
 
     public function test_host_can_restart_an_ended_session_for_sixty_minutes(): void

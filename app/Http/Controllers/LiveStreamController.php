@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\LiveStreamSession;
 use App\Models\User;
+use App\Services\JitsiJwtService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -153,7 +154,7 @@ class LiveStreamController extends Controller
         return redirect()->route('live-streams.room', $liveStream);
     }
 
-    public function room(LiveStreamSession $liveStream)
+    public function room(LiveStreamSession $liveStream, JitsiJwtService $jitsi)
     {
         $isHost = (int) $liveStream->started_by === Auth::id();
         $isManager = $this->canManage($liveStream->classroom);
@@ -169,16 +170,27 @@ class LiveStreamController extends Controller
 
         abort_unless($liveStream->started_at && $liveStream->started_by, 403, 'Pengajar belum memulai sesi.');
 
+        $roomAlias = sprintf(
+            '%s-%d-%s',
+            config('jitsi.room_prefix'),
+            $liveStream->id,
+            substr(hash_hmac('sha256', 'live-stream-'.$liveStream->id, config('app.key')), 0, 24)
+        );
+        $usingJaas = $jitsi->configured();
+        $appId = trim((string) config('jitsi.app_id'));
+
         return view('live-streams.room', [
             'liveStream' => $liveStream,
             'isHost' => $isHost,
-            'jitsiDomain' => config('jitsi.domain'),
-            'jitsiRoomName' => sprintf(
-                '%s-%d-%s',
-                config('jitsi.room_prefix'),
-                $liveStream->id,
-                substr(hash_hmac('sha256', 'live-stream-'.$liveStream->id, config('app.key')), 0, 24)
-            ),
+            'jitsiDomain' => $usingJaas ? '8x8.vc' : 'meet.jit.si',
+            'jitsiRoomName' => $usingJaas ? $appId.'/'.$roomAlias : $roomAlias,
+            'jitsiScriptUrl' => $usingJaas
+                ? 'https://8x8.vc/'.$appId.'/external_api.js'
+                : 'https://meet.jit.si/external_api.js',
+            'jitsiJwt' => $usingJaas
+                ? $jitsi->create(Auth::user(), $liveStream, $roomAlias, $isHost)
+                : null,
+            'usingJaas' => $usingJaas,
         ]);
     }
 
