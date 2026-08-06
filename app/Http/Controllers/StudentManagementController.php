@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class StudentManagementController extends Controller
 {
@@ -70,7 +71,7 @@ class StudentManagementController extends Controller
             'student_class' => ['required', 'string'],
             'branch' => ['required', 'string', Rule::in($branches)],
             'academic_year' => ['required', 'string', 'regex:/^\d{4}-\d{4}$/'],
-            'password' => ['nullable', 'confirmed', 'min:6'],
+            'password' => ['nullable', 'confirmed', Password::min(8)],
         ]);
         $data['program_type'] = User::normalizeProgramType($data['program_type'] ?? null);
         validator($data, [

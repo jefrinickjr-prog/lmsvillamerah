@@ -13,7 +13,7 @@
       @method('PUT')
       @if($errors->any())<div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ $errors->first() }}</div>@endif
       <div class="space-y-5">
-        <div><label class="mb-2 block text-sm font-bold">Kelas Online</label><select name="classroom_id" required class="w-full rounded-2xl border border-slate-200 px-4 py-3">@foreach($classrooms as $classroom)<option value="{{ $classroom->id }}" @selected(old('classroom_id', $liveStream->classroom_id) == $classroom->id)>{{ $classroom->title }} · {{ $classroom->branch }}</option>@endforeach</select></div>
+        <div><label class="mb-2 block text-sm font-bold">Kelas</label><select name="classroom_id" required class="w-full rounded-2xl border border-slate-200 px-4 py-3">@foreach($classrooms as $classroom)<option value="{{ $classroom->id }}" @selected(old('classroom_id', $liveStream->classroom_id) == $classroom->id)>{{ $classroom->title }} · {{ $classroom->branch }} ({{ $classroom->delivery_mode === 'online' ? 'Online' : 'Offline — akan diaktifkan' }})</option>@endforeach</select></div>
         <div><label class="mb-2 block text-sm font-bold">Judul Sesi</label><input name="title" value="{{ old('title', $liveStream->title) }}" required maxlength="255" class="w-full rounded-2xl border border-slate-200 px-4 py-3"></div>
         <div class="grid gap-5 sm:grid-cols-2">
           <div><label class="mb-2 block text-sm font-bold">Mulai</label><input type="datetime-local" name="starts_at" value="{{ old('starts_at', $liveStream->starts_at->format('Y-m-d\\TH:i')) }}" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"></div>

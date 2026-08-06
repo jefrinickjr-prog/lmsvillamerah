@@ -32,6 +32,12 @@
         </div>
 
         <div>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Nomor Urut Video</label>
+          <input type="number" name="sort_order" value="{{ old('sort_order', $material->sort_order) }}" min="1" max="9999" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
+          <p class="mt-2 text-xs font-semibold text-slate-400">Ubah nomor ini untuk menyusun posisi video pada daftar pembelajaran.</p>
+        </div>
+
+        <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Judul Video</label>
           <input name="title" value="{{ old('title', $material->title) }}" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
         </div>

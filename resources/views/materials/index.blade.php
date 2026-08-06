@@ -62,8 +62,8 @@
 
         <article class="min-w-0 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200 sm:p-6">
           <div class="flex items-start justify-between gap-4">
-            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-100 text-indigo-700">
-              <i class="fa-solid fa-circle-play"></i>
+            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-lg font-black text-white" title="Nomor urut video">
+              {{ $material->sort_order }}
             </div>
             <span class="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">{{ $material->created_at->format('Y-m-d') }}</span>
           </div>

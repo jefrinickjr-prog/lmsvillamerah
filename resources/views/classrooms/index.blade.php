@@ -36,7 +36,7 @@
             <i class="fa-solid fa-pen-to-square"></i>
             Edit
           </a>
-          <form method="POST" action="{{ route('classrooms.destroy', $classroom) }}" onsubmit="return confirm('Hapus kelas ini? Semua video pembelajaran dan tugas di kelas ini juga akan terhapus.');">
+          <form method="POST" action="{{ route('classrooms.destroy', $classroom) }}" onsubmit="return confirm('Hapus kelas ini? Video pembelajaran tetap tersimpan dan akan muncul kembali jika kelas dibuat lagi.');">
             @csrf
             @method('DELETE')
             <button class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600 hover:bg-rose-100" type="submit">

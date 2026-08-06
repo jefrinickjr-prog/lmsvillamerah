@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Material;
 use App\Models\Classroom;
+use App\Models\Material;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,8 +22,9 @@ class MaterialController extends Controller
 
         $materials = Material::with(['classroom', 'classrooms'])
             ->when($hasProgramTypeColumn, fn ($query) => $query->where('program_type', $selectedProgramType))
-            ->when(Auth::user()?->role === 'student', fn ($query) => $this->applyStudentClassroomAccess($query))
-            ->latest()
+            ->when(Auth::user()?->role === 'student', fn ($query) => $this->applyStudentClassroomAccess($query, $selectedProgramType))
+            ->orderBy('sort_order')
+            ->orderBy('id')
             ->get();
 
         return view('materials.index', compact('materials', 'programTypes', 'visibleProgramTypes', 'selectedProgramType'));
@@ -118,6 +119,7 @@ class MaterialController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'content' => ['nullable', 'string'],
             'program_type' => ['nullable', 'string', Rule::in(array_keys($this->videoGroups()))],
             'classroom_ids' => ['required', 'array', 'min:1'],
@@ -158,6 +160,14 @@ class MaterialController extends Controller
     {
         $classroomIds = $data['classroom_ids'];
         unset($data['classroom_ids']);
+
+        if (empty($data['sort_order'])) {
+            if ($material) {
+                unset($data['sort_order']);
+            } else {
+                $data['sort_order'] = ((int) Material::where('program_type', $data['program_type'])->max('sort_order')) + 1;
+            }
+        }
 
         if ($material) {
             $material->update($data);
@@ -206,12 +216,20 @@ class MaterialController extends Controller
         return array_intersect_key($programTypes, array_flip($accesses)) ?: ['gambar' => $programTypes['gambar']];
     }
 
-    private function applyStudentClassroomAccess($query): void
+    private function applyStudentClassroomAccess($query, string $selectedProgramType): void
     {
+        if (
+            $selectedProgramType === 'skolastik'
+            && User::normalizeProgramType(Auth::user()?->program_type) === 'skolastik'
+        ) {
+            return;
+        }
+
         $studentClassKeys = User::studentClassLookupKeys(Auth::user()?->student_class);
 
         if ($studentClassKeys === []) {
             $query->whereRaw('1 = 0');
+
             return;
         }
 

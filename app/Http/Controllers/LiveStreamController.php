@@ -54,9 +54,11 @@ class LiveStreamController extends Controller
 
         $sessions = $query->get();
         $classrooms = in_array($user->role, ['teacher', 'admin', 'super_admin'], true)
-            ? Classroom::where('delivery_mode', 'online')
-                ->when($user->role === 'teacher', fn ($q) => $q->where('teacher_id', $user->id))
-                ->orderBy('title')->get()
+            ? Classroom::when($user->role === 'teacher', fn ($q) => $q->where('teacher_id', $user->id))
+                ->orderByRaw("CASE WHEN delivery_mode = 'online' THEN 0 ELSE 1 END")
+                ->orderBy('title')
+                ->orderBy('branch')
+                ->get()
             : collect();
 
         return view('live-streams.index', compact('sessions', 'classrooms'));
@@ -68,18 +70,18 @@ class LiveStreamController extends Controller
         $data = $this->validateData($request);
         $classroom = Classroom::findOrFail($data['classroom_id']);
         abort_unless($this->canManage($classroom), 403);
-        abort_unless($classroom->delivery_mode === 'online', 422, 'Live streaming hanya dapat dibuat untuk kelas online.');
+        $this->activateClassroomForLive($classroom);
         LiveStreamSession::create($data);
 
-        return back()->with('success', 'Jadwal live streaming berhasil dibuat.');
+        return back()->with('success', 'Jadwal live streaming berhasil dibuat dan kelas sudah diaktifkan sebagai kelas online.');
     }
 
     public function edit(LiveStreamSession $liveStream)
     {
         abort_unless($this->canManage($liveStream->classroom), 403);
 
-        $classrooms = Classroom::where('delivery_mode', 'online')
-            ->when(Auth::user()?->role === 'teacher', fn ($query) => $query->where('teacher_id', Auth::id()))
+        $classrooms = Classroom::when(Auth::user()?->role === 'teacher', fn ($query) => $query->where('teacher_id', Auth::id()))
+            ->orderByRaw("CASE WHEN delivery_mode = 'online' THEN 0 ELSE 1 END")
             ->orderBy('title')
             ->get();
 
@@ -92,6 +94,7 @@ class LiveStreamController extends Controller
         $data = $this->validateData($request);
         $classroom = Classroom::findOrFail($data['classroom_id']);
         abort_unless($this->canManage($classroom), 403);
+        $this->activateClassroomForLive($classroom);
         $liveStream->update($data + [
             'started_at' => null,
             'started_by' => null,
@@ -265,11 +268,44 @@ class LiveStreamController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
-            'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')->where('delivery_mode', 'online')],
+            'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')],
             'title' => ['required', 'string', 'max:255'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
         ]);
+    }
+
+    private function activateClassroomForLive(Classroom $classroom): void
+    {
+        DB::transaction(function () use ($classroom): void {
+            if ($classroom->delivery_mode !== 'online') {
+                $classroom->update(['delivery_mode' => 'online']);
+            }
+
+            $classKeys = User::studentClassLookupKeys($classroom->title);
+            $branchKeys = User::branchLookupKeys($classroom->branch);
+
+            if ($classKeys === [] || $branchKeys === []) {
+                return;
+            }
+
+            User::where('role', 'student')
+                ->where('program_type', $classroom->program_type)
+                ->where(function ($query) use ($classKeys): void {
+                    foreach ($classKeys as $key) {
+                        $query->orWhereRaw('LOWER(TRIM(student_class)) = ?', [$key]);
+                    }
+                })
+                ->where(function ($query) use ($branchKeys): void {
+                    foreach ($branchKeys as $key) {
+                        $query->orWhereRaw('LOWER(TRIM(branch)) = ?', [$key]);
+                    }
+                })
+                ->update([
+                    'delivery_mode' => 'online',
+                    'updated_at' => now(),
+                ]);
+        });
     }
 
     private function isManager(): bool

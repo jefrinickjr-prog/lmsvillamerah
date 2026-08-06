@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classroom;
 use App\Models\Material;
 use App\Models\Submission;
 use App\Models\Task;
@@ -22,6 +23,7 @@ class TaskController extends Controller
 
                 if ($studentClassKeys === []) {
                     $query->whereRaw('1 = 0');
+
                     return;
                 }
 
@@ -66,11 +68,12 @@ class TaskController extends Controller
         [$data, $classroomIds] = $this->validatedTaskData($request);
 
         if ($request->hasFile('attachment')) {
-            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'public');
+            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'local');
         }
 
         $task = Task::create($data);
         $task->classrooms()->sync($classroomIds);
+
         return redirect()->route('tasks.index')->with('success', 'Tugas berhasil dibuat');
     }
 
@@ -93,15 +96,15 @@ class TaskController extends Controller
         [$data, $classroomIds] = $this->validatedTaskData($request, $task);
 
         if ($request->boolean('remove_attachment') && $task->attachment_path) {
-            Storage::disk('public')->delete($task->attachment_path);
+            $this->deleteAttachment($task->attachment_path);
             $data['attachment_path'] = null;
         }
 
         if ($request->hasFile('attachment')) {
             if ($task->attachment_path) {
-                Storage::disk('public')->delete($task->attachment_path);
+                $this->deleteAttachment($task->attachment_path);
             }
-            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'public');
+            $data['attachment_path'] = $request->file('attachment')->store('task-attachments', 'local');
         }
 
         $task->update($data);
@@ -115,7 +118,7 @@ class TaskController extends Controller
         abort_unless($this->canManageTask($task), 403);
 
         if ($task->attachment_path) {
-            Storage::disk('public')->delete($task->attachment_path);
+            $this->deleteAttachment($task->attachment_path);
         }
 
         $task->delete();
@@ -206,9 +209,12 @@ class TaskController extends Controller
     public function downloadAttachment(Task $task)
     {
         abort_unless($this->canViewTask($task), 403);
-        abort_unless($task->attachment_path && Storage::disk('public')->exists($task->attachment_path), 404);
+        abort_unless($task->attachment_path, 404);
 
-        return Storage::disk('public')->download($task->attachment_path);
+        $disk = Storage::disk('local')->exists($task->attachment_path) ? 'local' : 'public';
+        abort_unless(Storage::disk($disk)->exists($task->attachment_path), 404);
+
+        return Storage::disk($disk)->download($task->attachment_path);
     }
 
     public function submit(Request $request, Task $task)
@@ -298,7 +304,7 @@ class TaskController extends Controller
 
     private function availableClassrooms()
     {
-        $query = \App\Models\Classroom::with('teacher')->latest();
+        $query = Classroom::with('teacher')->latest();
 
         if (Auth::user()?->role === 'teacher') {
             $query->where('teacher_id', Auth::id());
@@ -355,5 +361,11 @@ class TaskController extends Controller
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function deleteAttachment(string $path): void
+    {
+        Storage::disk('local')->delete($path);
+        Storage::disk('public')->delete($path);
     }
 }

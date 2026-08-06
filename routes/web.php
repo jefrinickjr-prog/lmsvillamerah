@@ -25,7 +25,7 @@ Route::get('/', function () {
 
 // Simple auth (minimal, without Breeze)
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('login', [LoginController::class, 'login'])->name('login.post');
+Route::post('login', [LoginController::class, 'login'])->middleware('throttle:6,1')->name('login.post');
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth', 'admin.approved'])->group(function () {

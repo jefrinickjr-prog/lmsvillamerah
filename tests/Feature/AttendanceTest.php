@@ -24,7 +24,7 @@ class AttendanceTest extends TestCase
     {
         Carbon::setTestNow(Carbon::parse('2026-06-13 09:00:00', 'Asia/Jakarta'));
 
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role' => 'admin', 'approved_at' => now()]);
         $teacher = User::factory()->create(['role' => 'teacher']);
         $presentStudent = User::factory()->create([
             'role' => 'student',

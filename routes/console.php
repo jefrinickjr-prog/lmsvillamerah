@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -49,7 +49,13 @@ Artisan::command('lms:create-super-admin {email} {password} {--name=Super Admin}
     return self::SUCCESS;
 })->purpose('Create or update a full-access super admin account');
 
-Artisan::command('lms:repair-production {--seed-defaults : Create default admin and base classrooms when missing}', function () {
+Artisan::command('lms:repair-production {--seed-defaults : Create default admin and base classrooms when missing} {--admin-password= : Password for a newly seeded default admin}', function () {
+    if ($this->option('seed-defaults') && mb_strlen((string) $this->option('admin-password')) < 12) {
+        $this->error('Gunakan --admin-password dengan minimal 12 karakter saat memakai --seed-defaults.');
+
+        return self::FAILURE;
+    }
+
     $this->info('Repairing LMS production schema and data...');
 
     if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'program_type')) {
@@ -203,31 +209,6 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
             ]);
     }
 
-    if (Schema::hasTable('users')) {
-        $superAdminData = [
-            'name' => 'Super Admin',
-            'password' => Hash::make('spadmin123'),
-            'role' => 'super_admin',
-            'program_type' => 'gambar',
-            'email_verified_at' => now(),
-            'updated_at' => now(),
-        ];
-
-        if (Schema::hasColumn('users', 'video_accesses')) {
-            $superAdminData['video_accesses'] = json_encode(['gambar', 'skolastik']);
-        }
-
-        if (Schema::hasColumn('users', 'approved_at')) {
-            $superAdminData['approved_at'] = now();
-        }
-
-        DB::table('users')->updateOrInsert(
-            ['email' => 'spadmin@vilmer.com'],
-            $superAdminData + ['created_at' => now()]
-        );
-        $this->line('Ensured super admin: spadmin@vilmer.com / spadmin123');
-    }
-
     if ($addedAdminApproval && Schema::hasTable('users') && Schema::hasColumn('users', 'approved_at')) {
         DB::table('users')
             ->whereIn('role', ['admin', 'super_admin'])
@@ -319,7 +300,7 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
             ['email' => 'admin@lmsvillamerah.sivmi.id'],
             [
                 'name' => 'Admin LMS',
-                'password' => Hash::make('Admin12345'),
+                'password' => Hash::make((string) $this->option('admin-password')),
                 'role' => 'admin',
                 'program_type' => 'gambar',
                 'email_verified_at' => now(),
@@ -328,7 +309,7 @@ Artisan::command('lms:repair-production {--seed-defaults : Create default admin 
         );
 
         if ($admin->wasRecentlyCreated) {
-            $this->line('Created default admin: admin@lmsvillamerah.sivmi.id / Admin12345');
+            $this->line('Created default admin: admin@lmsvillamerah.sivmi.id');
         }
 
         if (Schema::hasTable('classrooms')) {

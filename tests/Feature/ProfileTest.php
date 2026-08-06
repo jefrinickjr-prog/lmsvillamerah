@@ -19,6 +19,7 @@ class ProfileTest extends TestCase
             $user = User::factory()->create([
                 'role' => $role,
                 'student_class' => $role === 'student' ? 'SR Gold' : null,
+                'approved_at' => $role === 'admin' ? now() : null,
             ]);
 
             $this->actingAs($user)
@@ -68,6 +69,7 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'admin',
+            'approved_at' => now(),
             'password' => Hash::make('password-lama'),
         ]);
 

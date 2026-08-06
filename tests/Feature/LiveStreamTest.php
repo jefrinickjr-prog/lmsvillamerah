@@ -192,6 +192,47 @@ class LiveStreamTest extends TestCase
         $this->assertSame($teacher->id, $session->fresh()->started_by);
     }
 
+    public function test_admin_can_schedule_an_offline_class_and_activate_matching_students(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approved_at' => now()]);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'gambar',
+            'delivery_mode' => 'offline',
+            'student_class' => 'SR Gold',
+            'branch' => 'Bandung',
+        ]);
+        $classroom = Classroom::create([
+            'program_type' => 'gambar',
+            'delivery_mode' => 'offline',
+            'title' => 'SR Gold',
+            'branch' => 'Bandung',
+            'teacher_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('live-streams.index'))
+            ->assertOk()
+            ->assertSee('Offline — akan diaktifkan')
+            ->assertSee('Buat Jadwal');
+
+        $this->actingAs($admin)
+            ->post(route('live-streams.store'), [
+                'classroom_id' => $classroom->id,
+                'title' => 'Kelas Gold Online',
+                'starts_at' => now()->addHour()->format('Y-m-d H:i:s'),
+                'ends_at' => now()->addHours(2)->format('Y-m-d H:i:s'),
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('online', $classroom->fresh()->delivery_mode);
+        $this->assertSame('online', $student->fresh()->delivery_mode);
+        $this->assertDatabaseHas('live_stream_sessions', [
+            'classroom_id' => $classroom->id,
+            'title' => 'Kelas Gold Online',
+        ]);
+    }
+
     public function test_teacher_sees_a_visible_start_live_button(): void
     {
         [, $session] = $this->makeSession();

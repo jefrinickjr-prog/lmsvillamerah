@@ -13,7 +13,7 @@ class StudentManagementTest extends TestCase
 
     public function test_admin_can_view_and_edit_registered_students(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role' => 'admin', 'approved_at' => now()]);
         $student = User::factory()->create([
             'role' => 'student',
             'name' => 'Siswa Lama',

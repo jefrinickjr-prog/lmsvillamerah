@@ -47,7 +47,7 @@ class MaterialAuthorizationTest extends TestCase
 
     public function test_admin_can_create_material(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role' => 'admin', 'approved_at' => now()]);
         $teacher = User::factory()->create(['role' => 'teacher']);
         $classroom = Classroom::create([
             'title' => 'Anatomi Dasar',
@@ -106,6 +106,42 @@ class MaterialAuthorizationTest extends TestCase
             ->assertDontSee($material->title);
     }
 
+    public function test_videos_are_displayed_by_their_sequence_number(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_class' => 'SR Gold',
+            'program_type' => 'gambar',
+        ]);
+        $classroom = Classroom::create([
+            'program_type' => 'gambar',
+            'title' => 'SR Gold',
+            'branch' => 'Bandung',
+            'teacher_id' => $teacher->id,
+        ]);
+
+        Material::create([
+            'classroom_id' => $classroom->id,
+            'program_type' => 'gambar',
+            'sort_order' => 2,
+            'title' => 'Video Kedua',
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
+        Material::create([
+            'classroom_id' => $classroom->id,
+            'program_type' => 'gambar',
+            'sort_order' => 1,
+            'title' => 'Video Pertama',
+            'youtube_embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('materials.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['Video Pertama', 'Video Kedua']);
+    }
+
     public function test_student_can_view_video_learning_for_their_class_from_any_branch(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
@@ -135,7 +171,7 @@ class MaterialAuthorizationTest extends TestCase
 
     public function test_video_learning_can_be_shared_to_multiple_classes(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role' => 'admin', 'approved_at' => now()]);
         $goldStudent = User::factory()->create([
             'role' => 'student',
             'program_type' => 'gambar',

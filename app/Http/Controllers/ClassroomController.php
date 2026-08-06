@@ -42,6 +42,20 @@ class ClassroomController extends Controller
 
         $data = $this->validatedClassroomData($request);
 
+        $classroom = Classroom::onlyTrashed()
+            ->where('program_type', $data['program_type'])
+            ->whereRaw('LOWER(TRIM(title)) = ?', [User::normalizeStudentClass($data['title'])])
+            ->whereRaw('LOWER(TRIM(branch)) = ?', [User::normalizeBranch($data['branch'])])
+            ->when(Auth::user()?->role === 'teacher', fn ($query) => $query->where('teacher_id', Auth::id()))
+            ->first();
+
+        if ($classroom) {
+            $classroom->restore();
+            $classroom->update($data);
+
+            return redirect()->route('classrooms.index')->with('success', 'Kelas berhasil dibuat kembali. Video pembelajaran lama tetap tersedia.');
+        }
+
         Classroom::create($data);
 
         return redirect()->route('classrooms.index')->with('success', 'Kelas berhasil dibuat');
@@ -76,7 +90,7 @@ class ClassroomController extends Controller
 
         $classroom->delete();
 
-        return redirect()->route('classrooms.index')->with('success', 'Kelas berhasil dihapus');
+        return redirect()->route('classrooms.index')->with('success', 'Kelas berhasil dihapus. Video pembelajaran tetap tersimpan dan akan muncul kembali saat kelas dibuat lagi.');
     }
 
     private function canManageClassrooms(): bool

@@ -18,10 +18,16 @@
       @csrf
       <h3 class="mb-5 text-lg font-black">Buat Jadwal Live</h3>
       @if($classrooms->isEmpty())
-        <p class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">Belum ada kelas online. Ubah kategori kelas menjadi Online terlebih dahulu.</p>
+        <div class="rounded-2xl bg-amber-50 px-4 py-4 text-sm font-bold text-amber-700">
+          <p>Belum ada kelas. Buat kelas terlebih dahulu agar jadwal live dapat dibuat.</p>
+          <a href="{{ route('classrooms.create') }}" class="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-white">
+            <i class="fa-solid fa-plus"></i> Buat Kelas Online
+          </a>
+        </div>
       @else
+        <p class="mb-4 rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">Kelas Offline akan otomatis diaktifkan menjadi Online saat jadwal disimpan. Siswa pada kelas dan cabang yang sesuai juga akan memperoleh akses live.</p>
         <div class="grid gap-4 md:grid-cols-2">
-          <div><label class="mb-2 block text-sm font-bold">Kelas Online</label><select name="classroom_id" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"><option value="">Pilih kelas</option>@foreach($classrooms as $classroom)<option value="{{ $classroom->id }}" @selected(old('classroom_id') == $classroom->id)>{{ $classroom->title }} · {{ $classroom->branch }}</option>@endforeach</select></div>
+          <div><label class="mb-2 block text-sm font-bold">Kelas</label><select name="classroom_id" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"><option value="">Pilih kelas</option>@foreach($classrooms as $classroom)<option value="{{ $classroom->id }}" @selected(old('classroom_id') == $classroom->id)>{{ $classroom->title }} · {{ $classroom->branch }} ({{ $classroom->delivery_mode === 'online' ? 'Online' : 'Offline — akan diaktifkan' }})</option>@endforeach</select></div>
           <div><label class="mb-2 block text-sm font-bold">Judul Sesi</label><input name="title" value="{{ old('title') }}" required maxlength="255" class="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Contoh: Pembahasan Perspektif"></div>
           <div><label class="mb-2 block text-sm font-bold">Mulai</label><input type="datetime-local" name="starts_at" value="{{ old('starts_at') }}" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"></div>
           <div><label class="mb-2 block text-sm font-bold">Selesai</label><input type="datetime-local" name="ends_at" value="{{ old('ends_at') }}" required class="w-full rounded-2xl border border-slate-200 px-4 py-3"></div>
