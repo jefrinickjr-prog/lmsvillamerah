@@ -108,6 +108,35 @@
             <h3 class="font-black text-slate-900">Soal Tugas</h3>
             <p class="mt-1 text-sm text-slate-500">Isi sampai 20 soal. Kosongkan slot yang tidak dipakai.</p>
           </div>
+          <div class="mt-4 rounded-3xl border border-slate-200 bg-white p-4">
+            <div class="flex flex-wrap items-center gap-2">
+              @php
+                $equationButtons = [
+                  ['label' => 'α', 'value' => '\\alpha'],
+                  ['label' => 'β', 'value' => '\\beta'],
+                  ['label' => 'π', 'value' => '\\pi'],
+                  ['label' => 'θ', 'value' => '\\theta'],
+                  ['label' => '√', 'value' => '\\sqrt{}'],
+                  ['label' => '∑', 'value' => '\\sum'],
+                  ['label' => '∫', 'value' => '\\int'],
+                  ['label' => '±', 'value' => '\\pm'],
+                  ['label' => '≠', 'value' => '\\neq'],
+                  ['label' => '≤', 'value' => '\\leq'],
+                  ['label' => '≥', 'value' => '\\geq'],
+                  ['label' => '×', 'value' => '\\times'],
+                  ['label' => '÷', 'value' => '\\div'],
+                  ['label' => 'frac', 'value' => '\\frac{}{}'],
+                  ['label' => 'lim', 'value' => '\\lim'],
+                ];
+              @endphp
+              @foreach($equationButtons as $button)
+                <button type="button" data-equation="{{ $button['value'] }}" class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700">
+                  {{ $button['label'] }}
+                </button>
+              @endforeach
+            </div>
+            <p class="mt-3 text-xs text-slate-500">Klik simbol untuk menambahkan kode equation di field pertanyaan atau pilihan jawaban yang sedang aktif. Gunakan format LaTeX seperti <span class="font-semibold">\frac{}{} atau \sqrt{} </span>.</p>
+          </div>
           <div class="mt-4 space-y-4">
             @for($index = 0; $index < 20; $index++)
               @php
@@ -150,4 +179,39 @@
       </div>
     </form>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let activeField = null;
+      const inputFields = Array.from(document.querySelectorAll('input[name^="questions"][name$="[prompt]"], textarea[name^="questions"][name$="[options]"]'));
+
+      inputFields.forEach((field) => {
+        field.addEventListener('focus', function () {
+          activeField = this;
+        });
+      });
+
+      document.querySelectorAll('button[data-equation]').forEach((button) => {
+        button.addEventListener('click', function () {
+          if (! activeField) {
+            activeField = inputFields[0] || null;
+            activeField?.focus();
+          }
+
+          if (! activeField) {
+            return;
+          }
+
+          const equation = this.getAttribute('data-equation') || '';
+          const start = activeField.selectionStart || 0;
+          const end = activeField.selectionEnd || 0;
+          const currentValue = activeField.value || '';
+          activeField.value = currentValue.substring(0, start) + equation + currentValue.substring(end);
+          const cursorPosition = start + equation.length;
+          activeField.setSelectionRange(cursorPosition, cursorPosition);
+          activeField.focus();
+        });
+      });
+    });
+  </script>
 @endsection
