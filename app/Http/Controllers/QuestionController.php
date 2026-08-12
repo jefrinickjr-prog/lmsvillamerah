@@ -5,7 +5,7 @@ class QuestionController extends Controller
 {
  private function admin():void { abort_unless(in_array(auth()->user()->role,['admin','super_admin','teacher']),403); }
  public function index(Request $r){$this->admin();$q=Question::with(['subject','topic','options'])->latest(); foreach(['subject_id','topic_id','type','difficulty','status','year','class_level'] as $f) if($r->filled($f))$q->where($f,$r->$f); return view('questions.index',['questions'=>$q->paginate(20)->withQueryString(),'subjects'=>Subject::with('topics')->get()]);}
- public function create(){ $this->admin(); if(!Subject::exists()){Subject::create(['name'=>'Matematika']);Subject::create(['name'=>'Fisika']);} return view('questions.form',['question'=>new Question,'subjects'=>Subject::with('topics')->get()]); }
+ public function create(){ $this->admin(); return view('questions.form',['question'=>new Question,'subjects'=>Subject::with('topics')->get()]); }
  public function store(Request $r){$this->admin();$data=$this->validated($r); DB::transaction(function()use($data,$r){$q=Question::create($data+['created_by'=>auth()->id(),'year'=>now()->year]);$this->options($q,$r);});return redirect()->route('questions.index')->with('success','Soal berhasil disimpan.');}
  public function edit(Question $question){$this->admin();$question->load('options');return view('questions.form',compact('question')+['subjects'=>Subject::with('topics')->get()]);}
  public function update(Request $r,Question $question){$this->admin();$data=$this->validated($r);DB::transaction(function()use($data,$r,$question){$question->update($data);$question->options()->delete();$this->options($question,$r);});return redirect()->route('questions.index')->with('success','Soal diperbarui.');}
