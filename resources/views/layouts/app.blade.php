@@ -227,11 +227,14 @@
 
         if (($user->role ?? 'student') === 'student') {
           $navItems = array_merge($navItems, [
+            ['label' => 'Ujian Saya', 'icon' => 'fa-solid fa-file-pen', 'route' => 'exams.index', 'active' => request()->routeIs('exams.*') || request()->routeIs('attempts.*')],
             ['label' => 'Penilaian', 'icon' => 'fa-solid fa-star-half-stroke', 'route' => 'student.grades', 'active' => request()->routeIs('student.grades')],
             ['label' => 'Rekap Absensi', 'icon' => 'fa-solid fa-calendar-check', 'route' => 'student.attendance', 'active' => request()->routeIs('student.attendance')],
             ['label' => 'Laporan', 'icon' => 'fa-solid fa-chart-line', 'route' => 'student.reports', 'active' => request()->routeIs('student.reports')],
           ]);
         } else {
+          $navItems[] = ['label' => 'Bank Soal', 'icon' => 'fa-solid fa-box-archive', 'route' => 'questions.index', 'active' => request()->routeIs('questions.*')];
+          $navItems[] = ['label' => 'Ujian', 'icon' => 'fa-solid fa-file-circle-check', 'route' => 'exams.index', 'active' => request()->routeIs('exams.*') || request()->routeIs('attempts.*')];
           array_splice($navItems, 1, 0, [[
             'label' => 'Kelas',
             'icon' => 'fa-solid fa-chalkboard-user',

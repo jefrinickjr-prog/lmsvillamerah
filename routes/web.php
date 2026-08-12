@@ -14,6 +14,8 @@ use App\Http\Controllers\StudentManagementController;
 use App\Http\Controllers\StudentPageController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\ExamController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +78,15 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::get('/penilaian', [StudentPageController::class, 'grades'])->name('student.grades');
     Route::get('/rekap-absensi', [StudentPageController::class, 'attendance'])->name('student.attendance');
     Route::get('/laporan', [StudentPageController::class, 'reports'])->name('student.reports');
+
+    Route::post('questions/{question}/duplicate', [QuestionController::class, 'duplicate'])->name('questions.duplicate');
+    Route::resource('questions', QuestionController::class)->except('show');
+    Route::resource('exams', ExamController::class)->except(['show','destroy']);
+    Route::post('exams/{exam}/start', [ExamController::class, 'start'])->name('exams.start');
+    Route::get('attempts/{attempt}', [ExamController::class, 'showAttempt'])->name('attempts.show');
+    Route::post('attempts/{attempt}/autosave', [ExamController::class, 'autosave'])->name('attempts.autosave');
+    Route::post('attempts/{attempt}/submit', [ExamController::class, 'submit'])->name('attempts.submit');
+    Route::get('attempts/{attempt}/result', [ExamController::class, 'result'])->name('attempts.result');
 });
 
 // Public helper route
