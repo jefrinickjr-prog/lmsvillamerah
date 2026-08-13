@@ -17,12 +17,12 @@
   ];
 @endphp
 
-@foreach(['question' => 'Pertanyaan', 'explanation' => 'Pembahasan'] as $name => $label)
+@foreach(['story' => 'Cerita / Teks Pengantar', 'question' => 'Pertanyaan', 'explanation' => 'Pembahasan'] as $name => $label)
   <section class="rounded-3xl bg-white p-6 shadow-sm">
     <div class="flex flex-wrap items-end justify-between gap-2">
       <div>
         <label for="{{ $name }}" class="text-lg font-black">{{ $label }}</label>
-        <p class="mt-1 text-sm text-slate-500">Tulis kalimat seperti biasa. Klik tombol rumus saat diperlukan.</p>
+        <p class="mt-1 text-sm text-slate-500">{{ $name === 'story' ? 'Opsional. Salin cerita yang sama pada setiap soal yang masih terkait dengan cerita ini.' : 'Tulis kalimat seperti biasa. Klik tombol rumus saat diperlukan.' }}</p>
       </div>
       <button type="button" data-wrap-math data-target="{{ $name }}" class="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-bold text-indigo-700">
         Jadikan teks terpilih sebagai rumus
@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    <textarea id="{{ $name }}" name="{{ $name }}" rows="{{ $name === 'question' ? 7 : 7 }}" {{ $name === 'question' ? 'required' : '' }} class="mt-4 w-full rounded-2xl border-slate-200 font-mono text-sm leading-6" placeholder="Contoh: Nilai hari = $\\frac{150}{7}$ = 21, ...">{{ old($name, $question->$name) }}</textarea>
+    <textarea id="{{ $name }}" name="{{ $name }}" rows="{{ $name === 'story' ? 10 : 7 }}" {{ $name === 'question' ? 'required' : '' }} class="mt-4 w-full rounded-2xl border-slate-200 font-mono text-sm leading-6" placeholder="{{ $name === 'story' ? 'Masukkan cerita atau bacaan yang menjadi dasar beberapa soal...' : 'Contoh: Nilai hari = $\\frac{150}{7}$ = 21, ...' }}">{{ old($name, $question->$name) }}</textarea>
 
     <div class="mt-4">
       <div class="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Pratinjau hasil</div>

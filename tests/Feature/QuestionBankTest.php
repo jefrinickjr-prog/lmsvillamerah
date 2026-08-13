@@ -19,6 +19,7 @@ class QuestionBankTest extends TestCase
         $response = $this->actingAs($teacher)->post(route('questions.store'), [
             'subject_id' => $subject->id,
             'type' => 'multiple_choice',
+            'story' => 'Sebuah cerita dipakai untuk beberapa pertanyaan.',
             'question' => 'Berapakah $\\frac{150}{7}$?',
             'difficulty' => 'medium',
             'score' => 10,
@@ -30,7 +31,10 @@ class QuestionBankTest extends TestCase
 
         $response->assertRedirect(route('questions.index'))
             ->assertSessionHas('success');
-        $this->assertDatabaseHas('questions', ['question' => 'Berapakah $\\frac{150}{7}$?']);
+        $this->assertDatabaseHas('questions', [
+            'story' => 'Sebuah cerita dipakai untuk beberapa pertanyaan.',
+            'question' => 'Berapakah $\\frac{150}{7}$?',
+        ]);
         $this->assertDatabaseHas('question_options', ['option_label' => 'B', 'is_correct' => true]);
     }
 

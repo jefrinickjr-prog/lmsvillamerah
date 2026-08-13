@@ -115,6 +115,7 @@ class QuestionController extends Controller
             'topic_id' => 'nullable|exists:topics,id',
             'class_level' => 'nullable|string|max:100',
             'type' => 'required|in:multiple_choice,essay',
+            'story' => 'nullable|string',
             'question' => 'required|string',
             'difficulty' => 'required|in:easy,medium,hard',
             'score' => 'required|numeric|min:0|max:10000',
