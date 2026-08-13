@@ -9,21 +9,21 @@
 @endphp
 
 <div class="mx-auto max-w-7xl">
-  <header class="sticky top-3 z-20 mb-6 rounded-3xl border border-slate-700 bg-slate-950 px-5 py-4 text-white shadow-xl shadow-slate-300/30 sm:px-7">
+  <header class="sticky top-3 z-20 mb-6 rounded-3xl border border-slate-700 px-5 py-4 shadow-xl shadow-slate-300/30 sm:px-7" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <div class="text-xs font-black uppercase tracking-[0.18em] text-indigo-300">Ujian Berlangsung</div>
+        <div class="text-xs font-black uppercase tracking-[0.18em]" style="color:#a5b4fc">Ujian Berlangsung</div>
         <h1 class="mt-1 text-xl font-black sm:text-2xl">{{ $attempt->exam->title }}</h1>
-        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-400">
+        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold" style="color:#cbd5e1">
           <span>{{ $questionCount }} soal</span>
           <span>Durasi {{ $attempt->exam->duration }} menit</span>
           <span>Jawaban tersimpan otomatis</span>
         </div>
       </div>
 
-      <div id="timerBox" class="min-w-40 rounded-2xl border border-slate-700 bg-slate-900 px-5 py-3 text-center">
-        <div class="text-[11px] font-black uppercase tracking-widest text-slate-400">Sisa Waktu</div>
-        <div id="timer" class="mt-1 font-mono text-3xl font-black tabular-nums text-white">--:--</div>
+      <div id="timerBox" class="min-w-40 rounded-2xl border px-5 py-3 text-center" style="background:#020617;border-color:#475569;color:#fff">
+        <div class="text-[11px] font-black uppercase tracking-widest" style="color:#cbd5e1">Sisa Waktu</div>
+        <div id="timer" class="mt-1 font-mono text-3xl font-black tabular-nums" style="color:#fff">--:--</div>
       </div>
     </div>
   </header>
@@ -86,6 +86,16 @@
         <button id="prev" type="button" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-700 shadow-sm hover:bg-slate-50">← Sebelumnya</button>
         <button id="next" type="button" class="rounded-2xl bg-indigo-600 px-6 py-3 font-black text-white shadow-sm hover:bg-indigo-700">Berikutnya →</button>
       </div>
+
+      <div id="completionPanel" class="mt-5 rounded-3xl border p-5 shadow-sm sm:p-6" style="display:{{ count($answeredIds) === $questionCount && $questionCount > 0 ? 'block' : 'none' }};background:#ecfdf5;border-color:#6ee7b7">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="font-black" style="color:#065f46">Semua soal sudah terjawab</div>
+            <p class="mt-1 text-sm" style="color:#047857">Anda tidak perlu menunggu waktu habis. Periksa kembali atau langsung simpan hasil ujian.</p>
+          </div>
+          <button id="finishExam" type="button" class="rounded-2xl px-6 py-3 font-black shadow-sm" style="background:#059669;color:#fff">Simpan dan Akhiri Ujian</button>
+        </div>
+      </div>
     </main>
 
     <aside class="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-40">
@@ -111,9 +121,9 @@
         Lengkapi seluruh jawaban untuk mengirim hasil ujian.
       </div>
 
-      <form id="submitForm" method="post" action="{{ route('attempts.submit', $attempt) }}" class="mt-6 hidden" onsubmit="return confirm('Semua jawaban sudah terisi. Simpan dan kirim hasil ujian?')">
+      <form id="submitForm" method="post" action="{{ route('attempts.submit', $attempt) }}" class="mt-6" style="display:{{ count($answeredIds) === $questionCount && $questionCount > 0 ? 'block' : 'none' }}" onsubmit="return confirm('Semua jawaban sudah terisi. Simpan dan kirim hasil ujian?')">
         @csrf
-        <button class="w-full rounded-2xl bg-emerald-600 px-4 py-3 font-black text-white shadow-sm hover:bg-emerald-700">Simpan dan Kirim Hasil</button>
+        <button class="w-full rounded-2xl px-4 py-3 font-black shadow-sm" style="background:#059669;color:#fff">Simpan dan Kirim Hasil</button>
       </form>
     </aside>
   </div>
@@ -134,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const previousButton = document.querySelector('#prev');
   const submitForm = document.querySelector('#submitForm');
   const incompleteNotice = document.querySelector('#incompleteNotice');
+  const completionPanel = document.querySelector('#completionPanel');
 
   const isAnswered = (element) => element.type === 'radio'
     ? Boolean(element.closest('.question').querySelector('.answer:checked'))
@@ -153,9 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
       button.classList.toggle('border-slate-200', !isComplete && index !== current);
       button.classList.toggle('text-slate-600', !isComplete && index !== current);
     });
-    submitForm.classList.toggle('hidden', !complete);
-    incompleteNotice.classList.toggle('hidden', complete);
-    nextButton.classList.toggle('hidden', complete || current === sections.length - 1);
+    submitForm.style.display = complete ? 'block' : 'none';
+    completionPanel.style.display = complete ? 'block' : 'none';
+    incompleteNotice.style.display = complete ? 'none' : 'block';
+    nextButton.style.display = complete || current === sections.length - 1 ? 'none' : 'inline-flex';
   };
 
   const show = (index) => {
@@ -177,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   previousButton.addEventListener('click', () => show(current - 1));
   nextButton.addEventListener('click', () => show(current + 1));
+  document.querySelector('#finishExam').addEventListener('click', () => submitForm.requestSubmit());
   navButtons.forEach((button) => button.addEventListener('click', () => show(Number(button.dataset.go))));
 
   document.querySelectorAll('.answer').forEach((element) => {
@@ -228,6 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
       : `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     document.querySelector('#timerBox').classList.toggle('border-rose-500', seconds <= 300);
     document.querySelector('#timer').classList.toggle('text-rose-400', seconds <= 300);
+    document.querySelector('#timerBox').style.borderColor = seconds <= 300 ? '#fb7185' : '#475569';
+    document.querySelector('#timer').style.color = seconds <= 300 ? '#fda4af' : '#ffffff';
     if (seconds === 0) submitForm.submit();
   };
 
