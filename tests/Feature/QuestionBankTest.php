@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Subject;
+use App\Models\Question;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -54,5 +55,38 @@ class QuestionBankTest extends TestCase
         ])->assertRedirect(route('questions.create'))->assertSessionHasErrors('correct_answer');
 
         $this->assertDatabaseMissing('questions', ['question' => 'Contoh soal']);
+    }
+
+    public function test_question_bank_filters_by_type_difficulty_and_status(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $subject = Subject::firstOrCreate(['name' => 'Penalaran Umum']);
+        Question::create([
+            'subject_id' => $subject->id,
+            'type' => 'multiple_choice',
+            'question' => 'Soal yang sesuai filter',
+            'difficulty' => 'hard',
+            'status' => 'active',
+            'created_by' => $teacher->id,
+        ]);
+        Question::create([
+            'subject_id' => $subject->id,
+            'type' => 'essay',
+            'question' => 'Soal yang tidak sesuai filter',
+            'difficulty' => 'easy',
+            'status' => 'inactive',
+            'created_by' => $teacher->id,
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('questions.index', [
+                'subject_id' => $subject->id,
+                'type' => 'multiple_choice',
+                'difficulty' => 'hard',
+                'status' => 'active',
+            ]))
+            ->assertOk()
+            ->assertSee('Soal yang sesuai filter')
+            ->assertDontSee('Soal yang tidak sesuai filter');
     }
 }

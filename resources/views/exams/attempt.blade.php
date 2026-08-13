@@ -93,7 +93,10 @@
             <div class="font-black" style="color:#065f46">Semua soal sudah terjawab</div>
             <p class="mt-1 text-sm" style="color:#047857">Anda tidak perlu menunggu waktu habis. Periksa kembali atau langsung simpan hasil ujian.</p>
           </div>
-          <button id="finishExam" type="button" class="rounded-2xl px-6 py-3 font-black shadow-sm" style="background:#059669;color:#fff">Simpan dan Akhiri Ujian</button>
+          <form id="submitForm" method="post" action="{{ route('attempts.submit', $attempt) }}" onsubmit="return confirm('Semua jawaban sudah terisi. Simpan dan akhiri ujian?')">
+            @csrf
+            <button class="rounded-2xl px-6 py-3 font-black shadow-sm" style="background:#059669;color:#fff">Simpan dan Akhiri Ujian</button>
+          </form>
         </div>
       </div>
     </main>
@@ -121,10 +124,6 @@
         Lengkapi seluruh jawaban untuk mengirim hasil ujian.
       </div>
 
-      <form id="submitForm" method="post" action="{{ route('attempts.submit', $attempt) }}" class="mt-6" style="display:{{ count($answeredIds) === $questionCount && $questionCount > 0 ? 'block' : 'none' }}" onsubmit="return confirm('Semua jawaban sudah terisi. Simpan dan kirim hasil ujian?')">
-        @csrf
-        <button class="w-full rounded-2xl px-4 py-3 font-black shadow-sm" style="background:#059669;color:#fff">Simpan dan Kirim Hasil</button>
-      </form>
     </aside>
   </div>
 </div>
@@ -164,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
       button.classList.toggle('border-slate-200', !isComplete && index !== current);
       button.classList.toggle('text-slate-600', !isComplete && index !== current);
     });
-    submitForm.style.display = complete ? 'block' : 'none';
     completionPanel.style.display = complete ? 'block' : 'none';
     incompleteNotice.style.display = complete ? 'none' : 'block';
     nextButton.style.display = complete || current === sections.length - 1 ? 'none' : 'inline-flex';
@@ -189,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   previousButton.addEventListener('click', () => show(current - 1));
   nextButton.addEventListener('click', () => show(current + 1));
-  document.querySelector('#finishExam').addEventListener('click', () => submitForm.requestSubmit());
   navButtons.forEach((button) => button.addEventListener('click', () => show(Number(button.dataset.go))));
 
   document.querySelectorAll('.answer').forEach((element) => {
