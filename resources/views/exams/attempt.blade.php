@@ -10,7 +10,7 @@
 
 <style>
   .exam-shell { --exam-indigo:#4f46e5; --exam-indigo-dark:#312e81; --exam-green:#059669; --exam-slate:#0f172a; }
-  .exam-topbar { background:linear-gradient(135deg,#111827 0%,#1e293b 58%,#312e81 100%); color:#fff; }
+  .exam-topbar { background:linear-gradient(135deg,#4338ca 0%,#4f46e5 52%,#6366f1 100%); color:#fff; }
   .exam-nav { background:#fff; border:1px solid #cbd5e1; color:#475569; }
   .exam-nav:hover { border-color:#818cf8; background:#eef2ff; color:#3730a3; }
   .exam-nav.is-answered { background:#d1fae5; border-color:#6ee7b7; color:#065f46; }
@@ -23,19 +23,19 @@
 </style>
 
 <div class="exam-shell mx-auto max-w-[1500px]">
-  <header class="exam-topbar sticky top-3 z-20 mb-5 overflow-hidden rounded-3xl border border-slate-700 shadow-xl">
+  <header class="exam-topbar sticky top-2 z-20 mb-5 overflow-hidden rounded-3xl border shadow-lg" style="border-color:#818cf8;box-shadow:0 14px 32px rgba(79,70,229,.18)">
     <div class="grid items-center gap-4 px-5 py-4 sm:grid-cols-[1fr_auto_auto] sm:px-7">
       <div class="min-w-0">
-        <div class="text-[11px] font-black uppercase tracking-[0.2em]" style="color:#a5b4fc">Ujian Berlangsung</div>
+        <div class="text-[11px] font-black uppercase tracking-[0.2em]" style="color:#e0e7ff">Ujian Berlangsung</div>
         <h1 class="mt-1 truncate text-xl font-black">{{ $attempt->exam->title }}</h1>
-        <div class="mt-1 text-xs font-semibold" style="color:#cbd5e1">Jawaban tersimpan otomatis</div>
+        <div class="mt-1 text-xs font-semibold" style="color:#e0e7ff">Jawaban tersimpan otomatis</div>
       </div>
       <div class="hidden min-w-28 text-center sm:block">
-        <div class="text-[11px] font-bold uppercase tracking-widest" style="color:#94a3b8">Nomor Soal</div>
+        <div class="text-[11px] font-bold uppercase tracking-widest" style="color:#e0e7ff">Nomor Soal</div>
         <div id="currentNumber" class="mt-1 text-2xl font-black">1 / {{ $questionCount }}</div>
       </div>
-      <div id="timerBox" class="min-w-40 rounded-2xl border px-5 py-3 text-center" style="background:#020617;border-color:#475569">
-        <div class="text-[11px] font-black uppercase tracking-widest" style="color:#cbd5e1">Sisa Waktu</div>
+      <div id="timerBox" class="min-w-40 rounded-2xl border px-5 py-3 text-center" style="background:rgba(49,46,129,.58);border-color:#a5b4fc">
+        <div class="text-[11px] font-black uppercase tracking-widest" style="color:#e0e7ff">Sisa Waktu</div>
         <div id="timer" class="mt-1 font-mono text-3xl font-black tabular-nums" style="color:#fff">--:--</div>
       </div>
     </div>
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#timer').textContent = hours > 0
       ? `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(remaining).padStart(2,'0')}`
       : `${String(minutes).padStart(2,'0')}:${String(remaining).padStart(2,'0')}`;
-    document.querySelector('#timerBox').style.borderColor = seconds <= 300 ? '#fb7185' : '#475569';
+    document.querySelector('#timerBox').style.borderColor = seconds <= 300 ? '#fecdd3' : '#a5b4fc';
     document.querySelector('#timer').style.color = seconds <= 300 ? '#fda4af' : '#fff';
     if (seconds === 0) submitForm.submit();
   };

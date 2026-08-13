@@ -217,6 +217,7 @@
           'student' => 'Siswa',
         ][$user->role ?? 'student'] ?? 'Siswa';
         $photoUrl = $user->photo_path ? asset('storage/'.$user->photo_path) : null;
+        $isExamFocus = request()->routeIs('attempts.show');
 
         $navItems = [
           ['label' => 'Dashboard', 'icon' => 'fa-solid fa-table-columns', 'route' => 'dashboard', 'active' => request()->routeIs('dashboard')],
@@ -276,7 +277,7 @@
       <div class="min-h-screen">
         <input id="sidebarToggle" type="checkbox" class="sr-only" aria-hidden="true" tabindex="-1">
 
-        <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white shadow-xl transition-all duration-200 lg:translate-x-0 lg:shadow-none">
+        <aside id="appSidebar" class="{{ $isExamFocus ? 'hidden' : '' }} fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white shadow-xl transition-all duration-200 lg:translate-x-0 lg:shadow-none">
           <div class="relative flex h-full flex-col">
             <div class="sidebar-brand flex h-20 items-center gap-3 border-b border-slate-100 px-6">
               <div class="brand-logo-shell grid h-12 w-12 shrink-0 place-items-center">
@@ -321,8 +322,8 @@
 
         <label id="sidebarBackdrop" data-sidebar-close for="sidebarToggle" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden" aria-label="Tutup sidebar"></label>
 
-        <div id="appShell" class="transition-all duration-200 lg:pl-72">
-          <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div id="appShell" class="transition-all duration-200 {{ $isExamFocus ? '' : 'lg:pl-72' }}" @if($isExamFocus) style="padding-left:0!important" @endif>
+          <header class="{{ $isExamFocus ? 'hidden' : '' }} sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
             <div class="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
               <div class="flex items-center gap-3">
                 <label id="sidebarOpen" data-sidebar-open for="sidebarToggle" class="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 lg:hidden" aria-label="Buka sidebar" role="button" tabindex="0">
@@ -382,8 +383,8 @@
             </div>
           </header>
 
-          <main class="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-7xl">
+          <main class="min-w-0 {{ $isExamFocus ? 'px-3 py-3 sm:px-5 sm:py-4' : 'px-4 py-6 sm:px-6 lg:px-8' }}">
+            <div class="mx-auto {{ $isExamFocus ? 'max-w-[1600px]' : 'max-w-7xl' }}">
               @if(session('success'))
                 <div class="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">{{ session('success') }}</div>
               @endif
