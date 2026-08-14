@@ -11,6 +11,9 @@
 <style>
   .exam-shell { --exam-indigo:#4f46e5; --exam-indigo-dark:#312e81; --exam-green:#059669; --exam-slate:#0f172a; }
   .exam-topbar { background:linear-gradient(135deg,#4338ca 0%,#4f46e5 52%,#6366f1 100%); color:#fff; }
+  .exam-topbar-row { align-items:center; display:grid; gap:20px; grid-template-columns:minmax(0,1fr) 150px 180px; min-height:86px; padding:12px 24px; }
+  .exam-number-box { border-left:1px solid rgba(224,231,255,.35); border-right:1px solid rgba(224,231,255,.35); text-align:center; }
+  .exam-timer-box { justify-self:end; width:180px; }
   .exam-nav { background:#fff; border:1px solid #cbd5e1; color:#475569; }
   .exam-nav:hover { border-color:#818cf8; background:#eef2ff; color:#3730a3; }
   .exam-nav.is-answered { background:#d1fae5; border-color:#6ee7b7; color:#065f46; }
@@ -20,21 +23,26 @@
   .exam-option { transition:border-color .18s,background .18s,box-shadow .18s,transform .18s; }
   .exam-option:hover { border-color:#a5b4fc; background:#f8faff; transform:translateY(-1px); }
   @media (min-width:1024px) { .exam-workspace { grid-template-columns:280px minmax(0,1fr); } }
+  @media (max-width:639px) {
+    .exam-topbar-row { gap:10px; grid-template-columns:minmax(0,1fr) 112px; min-height:auto; padding:12px; }
+    .exam-number-box { display:none; }
+    .exam-timer-box { width:112px; }
+  }
 </style>
 
 <div class="exam-shell mx-auto max-w-[1500px]">
   <header class="exam-topbar sticky top-2 z-20 mb-5 overflow-hidden rounded-3xl border shadow-lg" style="border-color:#818cf8;box-shadow:0 14px 32px rgba(79,70,229,.18)">
-    <div class="grid items-center gap-4 px-5 py-4 sm:grid-cols-[1fr_auto_auto] sm:px-7">
+    <div class="exam-topbar-row">
       <div class="min-w-0 sm:max-w-md">
         <div class="text-[11px] font-black uppercase tracking-[0.2em]" style="color:#e0e7ff">Ujian Berlangsung</div>
         <h1 class="mt-1 truncate text-xl font-black">{{ $attempt->exam->title }}</h1>
         <div class="mt-1 truncate text-xs font-semibold" style="color:#e0e7ff">{{ $attempt->exam->description ?: 'Jawaban tersimpan otomatis' }}</div>
       </div>
-      <div class="hidden min-w-28 text-center sm:block">
+      <div class="exam-number-box">
         <div class="text-[11px] font-bold uppercase tracking-widest" style="color:#e0e7ff">Nomor Soal</div>
         <div id="currentNumber" class="mt-1 text-2xl font-black">1 / {{ $questionCount }}</div>
       </div>
-      <div id="timerBox" class="min-w-40 rounded-2xl border px-5 py-2 text-center" style="background:rgba(49,46,129,.58);border-color:#a5b4fc">
+      <div id="timerBox" class="exam-timer-box rounded-2xl border px-3 py-2 text-center" style="background:rgba(49,46,129,.58);border-color:#a5b4fc">
         <div class="text-[11px] font-black uppercase tracking-widest" style="color:#e0e7ff">Sisa Waktu</div>
         <div id="timer" class="font-mono text-2xl font-black tabular-nums" style="color:#fff">--:--</div>
       </div>
