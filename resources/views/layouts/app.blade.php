@@ -262,7 +262,7 @@
           ];
           if (($user->role ?? null) === 'super_admin') {
             $navItems[] = [
-              'label' => 'Kelola Admin',
+              'label' => 'Admin & Mentor',
               'icon' => 'fa-solid fa-user-shield',
               'route' => 'admin-users.index',
               'active' => request()->routeIs('admin-users.*'),

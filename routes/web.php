@@ -81,7 +81,8 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
 
     Route::post('questions/{question}/duplicate', [QuestionController::class, 'duplicate'])->name('questions.duplicate');
     Route::resource('questions', QuestionController::class)->except('show');
-    Route::resource('exams', ExamController::class)->except(['show','destroy']);
+    Route::get('exams/{exam}/results', [ExamController::class, 'results'])->name('exams.results');
+    Route::resource('exams', ExamController::class)->except('show');
     Route::post('exams/{exam}/start', [ExamController::class, 'start'])->name('exams.start');
     Route::get('attempts/{attempt}', [ExamController::class, 'showAttempt'])->name('attempts.show');
     Route::post('attempts/{attempt}/autosave', [ExamController::class, 'autosave'])->name('attempts.autosave');

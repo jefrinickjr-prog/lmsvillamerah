@@ -113,6 +113,33 @@ class ExamVisibilityTest extends TestCase
             ->assertRedirect(route('attempts.result', $attempt));
     }
 
+    public function test_teacher_can_view_exam_results_and_delete_exam(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $student = User::factory()->create(['role' => 'student']);
+        $exam = Exam::create($this->examData($teacher, 'Ujian Kelola', 'published'));
+        Attempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'started_at' => now()->subMinutes(10),
+            'submitted_at' => now(),
+            'status' => 'graded',
+            'score' => 50,
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('exams.results', $exam))
+            ->assertOk()
+            ->assertSee($student->name);
+
+        $this->actingAs($teacher)
+            ->delete(route('exams.destroy', $exam))
+            ->assertRedirect(route('exams.index'));
+
+        $this->assertDatabaseMissing('exams', ['id' => $exam->id]);
+        $this->assertDatabaseMissing('attempts', ['exam_id' => $exam->id]);
+    }
+
     private function examData(User $teacher, string $title, string $status): array
     {
         return [

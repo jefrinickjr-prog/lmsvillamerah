@@ -14,7 +14,7 @@ class AdminUserController extends Controller
     {
         $this->authorizeSuperAdmin();
 
-        $admins = User::where('role', 'admin')
+        $admins = User::whereIn('role', ['admin', 'teacher'])
             ->with('approver')
             ->latest()
             ->get();
@@ -37,23 +37,24 @@ class AdminUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
+            'role' => ['required', 'in:admin,teacher'],
         ]);
 
         User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => 'admin',
+            'role' => $data['role'],
             'program_type' => 'gambar',
             'video_accesses' => ['gambar'],
             'email_verified_at' => now(),
-            'approved_at' => null,
+            'approved_at' => $data['role'] === 'teacher' ? now() : null,
             'approved_by' => null,
         ]);
 
         return redirect()
             ->route('admin-users.index')
-            ->with('success', 'Akun admin berhasil dibuat dan menunggu persetujuan super admin.');
+            ->with('success', $data['role'] === 'teacher' ? 'Akun guru/mentor berhasil dibuat dan langsung aktif.' : 'Akun admin berhasil dibuat dan menunggu persetujuan super admin.');
     }
 
     public function approve(User $user)

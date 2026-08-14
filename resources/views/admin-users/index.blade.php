@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Kelola Admin')
+@section('title', 'Kelola Pengguna')
 
 @section('content')
   <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
     <div>
       <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Super Admin</p>
-      <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Kelola Admin</h2>
-      <p class="mt-2 text-slate-500">Daftarkan admin baru, lalu setujui agar akun mendapatkan akses penuh ke dashboard admin.</p>
+      <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Kelola Admin & Guru/Mentor</h2>
+      <p class="mt-2 text-slate-500">Daftarkan administrator dan tenaga pengajar dalam satu halaman.</p>
     </div>
 
     <a href="{{ route('admin-users.create') }}" class="btn-action btn-primary-solid rounded-2xl px-5 py-3 text-sm">
       <i class="fa-solid fa-user-plus"></i>
-      Tambah Admin
+      Tambah Pengguna
     </a>
   </div>
 
@@ -21,7 +21,8 @@
       <table class="w-full text-left text-sm">
         <thead class="bg-slate-50 text-xs font-black uppercase tracking-wider text-slate-400">
           <tr>
-            <th class="px-5 py-4">Admin</th>
+            <th class="px-5 py-4">Pengguna</th>
+            <th class="px-5 py-4">Peran</th>
             <th class="px-5 py-4">Status</th>
             <th class="px-5 py-4">Disetujui Oleh</th>
             <th class="px-5 py-4 text-right">Aksi</th>
@@ -34,8 +35,11 @@
                 <div class="font-black text-slate-900">{{ $admin->name }}</div>
                 <div class="mt-1 text-xs font-semibold text-slate-400">{{ $admin->email }}</div>
               </td>
+              <td class="px-5 py-4"><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ $admin->role === 'teacher' ? 'Guru / Mentor' : 'Administrator' }}</span></td>
               <td class="px-5 py-4">
-                @if($admin->approved_at)
+                @if($admin->role === 'teacher')
+                  <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-600">Aktif</span>
+                @elseif($admin->approved_at)
                   <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-600">Disetujui</span>
                   <div class="mt-1 text-xs font-semibold text-slate-400">{{ $admin->approved_at->format('d M Y H:i') }}</div>
                 @else
@@ -46,7 +50,9 @@
                 {{ $admin->approver?->name ?? '-' }}
               </td>
               <td class="px-5 py-4 text-right">
-                @if($admin->approved_at)
+                @if($admin->role === 'teacher')
+                  <span class="text-xs font-bold text-slate-400">Akses pengajar aktif</span>
+                @elseif($admin->approved_at)
                   <span class="text-xs font-bold text-slate-400">Akses penuh aktif</span>
                 @else
                   <form method="POST" action="{{ route('admin-users.approve', $admin) }}">
@@ -62,8 +68,8 @@
             </tr>
           @empty
             <tr>
-              <td colspan="4" class="px-5 py-10 text-center text-sm font-semibold text-slate-500">
-                Belum ada akun admin tambahan.
+              <td colspan="5" class="px-5 py-10 text-center text-sm font-semibold text-slate-500">
+                Belum ada akun admin atau guru/mentor tambahan.
               </td>
             </tr>
           @endforelse

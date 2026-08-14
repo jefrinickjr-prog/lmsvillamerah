@@ -25,18 +25,18 @@
 <div class="exam-shell mx-auto max-w-[1500px]">
   <header class="exam-topbar sticky top-2 z-20 mb-5 overflow-hidden rounded-3xl border shadow-lg" style="border-color:#818cf8;box-shadow:0 14px 32px rgba(79,70,229,.18)">
     <div class="grid items-center gap-4 px-5 py-4 sm:grid-cols-[1fr_auto_auto] sm:px-7">
-      <div class="min-w-0">
+      <div class="min-w-0 sm:max-w-md">
         <div class="text-[11px] font-black uppercase tracking-[0.2em]" style="color:#e0e7ff">Ujian Berlangsung</div>
         <h1 class="mt-1 truncate text-xl font-black">{{ $attempt->exam->title }}</h1>
-        <div class="mt-1 text-xs font-semibold" style="color:#e0e7ff">Jawaban tersimpan otomatis</div>
+        <div class="mt-1 truncate text-xs font-semibold" style="color:#e0e7ff">{{ $attempt->exam->description ?: 'Jawaban tersimpan otomatis' }}</div>
       </div>
       <div class="hidden min-w-28 text-center sm:block">
         <div class="text-[11px] font-bold uppercase tracking-widest" style="color:#e0e7ff">Nomor Soal</div>
         <div id="currentNumber" class="mt-1 text-2xl font-black">1 / {{ $questionCount }}</div>
       </div>
-      <div id="timerBox" class="min-w-40 rounded-2xl border px-5 py-3 text-center" style="background:rgba(49,46,129,.58);border-color:#a5b4fc">
+      <div id="timerBox" class="min-w-40 rounded-2xl border px-5 py-2 text-center" style="background:rgba(49,46,129,.58);border-color:#a5b4fc">
         <div class="text-[11px] font-black uppercase tracking-widest" style="color:#e0e7ff">Sisa Waktu</div>
-        <div id="timer" class="mt-1 font-mono text-3xl font-black tabular-nums" style="color:#fff">--:--</div>
+        <div id="timer" class="font-mono text-2xl font-black tabular-nums" style="color:#fff">--:--</div>
       </div>
     </div>
   </header>
