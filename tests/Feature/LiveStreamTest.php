@@ -161,7 +161,7 @@ class LiveStreamTest extends TestCase
             ->assertSee('meet.jit.si/external_api.js', false)
             ->assertSee("onload: () => loading.classList.add('is-hidden')", false)
             ->assertSee('Pembelajaran Online Bimbel Gambar Villa Merah')
-            ->assertSee('Keluar dari Ruang')
+            ->assertSee('Akhiri Live untuk Semua')
             ->assertDontSee('whereby.com', false);
     }
 
@@ -351,6 +351,27 @@ class LiveStreamTest extends TestCase
             ->get(route('live-streams.room', $session))
             ->assertRedirect(route('live-streams.index'))
             ->assertSessionHasErrors('live_stream');
+    }
+
+    public function test_teacher_can_end_live_stream_for_all_participants(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $session->participants()->attach($student->id);
+
+        $this->actingAs($teacher)
+            ->post(route('live-streams.end', $session))
+            ->assertRedirect(route('live-streams.index'))
+            ->assertSessionHas('success');
+
+        $session->refresh();
+        $this->assertTrue($session->ends_at->lte(now()));
+        $this->assertSame(0, $session->participants()->count());
+
+        $this->actingAs($student)
+            ->getJson(route('live-streams.status', $session))
+            ->assertOk()
+            ->assertJson(['ended' => true]);
     }
 
     private function makeSession(): array

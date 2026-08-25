@@ -31,4 +31,9 @@ class Classroom extends Model
     {
         return $this->hasMany(LiveStreamSession::class);
     }
+
+    public function meetingAssignments()
+    {
+        return $this->hasMany(MeetingAssignment::class);
+    }
 }

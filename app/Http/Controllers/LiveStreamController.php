@@ -128,6 +128,34 @@ class LiveStreamController extends Controller
         return redirect()->route('live-streams.room', $liveStream);
     }
 
+    public function end(LiveStreamSession $liveStream)
+    {
+        abort_unless($this->canManage($liveStream->classroom), 403);
+
+        DB::transaction(function () use ($liveStream): void {
+            $session = LiveStreamSession::whereKey($liveStream->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $session->update(['ends_at' => now()]);
+            $session->participants()->detach();
+        });
+
+        return redirect()->route('live-streams.index')->with('success', 'Live streaming telah diakhiri untuk seluruh peserta.');
+    }
+
+    public function status(LiveStreamSession $liveStream)
+    {
+        $canAccess = $this->canManage($liveStream->classroom)
+            || ($this->isStudentRole(Auth::user()?->role) && $this->studentCanAccess($liveStream->classroom));
+        abort_unless($canAccess, 403);
+
+        return response()->json([
+            'ended' => ! $liveStream->started_at || now()->gte($liveStream->ends_at),
+            'ends_at' => $liveStream->ends_at?->toIso8601String(),
+        ]);
+    }
+
     public function destroy(LiveStreamSession $liveStream)
     {
         abort_unless($this->canManage($liveStream->classroom), 403);

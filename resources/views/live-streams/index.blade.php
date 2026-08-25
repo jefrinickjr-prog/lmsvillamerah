@@ -90,6 +90,9 @@
             </form>
             <a href="{{ route('live-streams.edit', $session) }}" class="inline-flex items-center justify-center rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-black text-indigo-700"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit</a>
           </div>
+          @if($session->started_at && ! $ended)
+            <form method="POST" action="{{ route('live-streams.end', $session) }}" class="mt-2" onsubmit="return confirm('Akhiri live streaming untuk seluruh peserta?')">@csrf<button class="w-full rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-700"><i class="fa-solid fa-phone-slash mr-2"></i>Akhiri Live untuk Semua</button></form>
+          @endif
           <form method="POST" action="{{ route('live-streams.destroy', $session) }}" class="mt-2" onsubmit="return confirm('Hapus jadwal ini?')">@csrf @method('DELETE')<button class="w-full rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">Hapus Jadwal</button></form>
           @if($pendingRejoins->isNotEmpty())
             <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3">

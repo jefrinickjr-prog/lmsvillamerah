@@ -223,6 +223,7 @@
           ['label' => 'Dashboard', 'icon' => 'fa-solid fa-table-columns', 'route' => 'dashboard', 'active' => request()->routeIs('dashboard')],
           ['label' => 'Video Pembelajaran', 'icon' => 'fa-solid fa-circle-play', 'route' => 'materials.index', 'active' => request()->routeIs('materials.*')],
           ['label' => 'Live Streaming', 'icon' => 'fa-solid fa-video', 'route' => 'live-streams.index', 'active' => request()->routeIs('live-streams.*')],
+          ['label' => 'Tugas Pertemuan', 'icon' => 'fa-solid fa-images', 'route' => 'meeting-assignments.index', 'active' => request()->routeIs('meeting-assignments.*') || request()->routeIs('meeting-submissions.*')],
         ];
 
         if (($user->role ?? 'student') === 'student') {

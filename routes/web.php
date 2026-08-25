@@ -16,6 +16,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\MeetingAssignmentController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,8 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::get('live-streams/{liveStream}/edit', [LiveStreamController::class, 'edit'])->name('live-streams.edit');
     Route::put('live-streams/{liveStream}', [LiveStreamController::class, 'update'])->name('live-streams.update');
     Route::post('live-streams/{liveStream}/start', [LiveStreamController::class, 'start'])->name('live-streams.start');
+    Route::post('live-streams/{liveStream}/end', [LiveStreamController::class, 'end'])->name('live-streams.end');
+    Route::get('live-streams/{liveStream}/status', [LiveStreamController::class, 'status'])->name('live-streams.status');
     Route::get('live-streams/{liveStream}/room', [LiveStreamController::class, 'room'])->name('live-streams.room');
     Route::post('live-streams/{liveStream}/join', [LiveStreamController::class, 'join'])->name('live-streams.join');
     Route::post('live-streams/{liveStream}/rejoin-request', [LiveStreamController::class, 'requestRejoin'])->name('live-streams.rejoin.request');
@@ -58,6 +61,13 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::delete('live-streams/{liveStream}', [LiveStreamController::class, 'destroy'])->name('live-streams.destroy');
     Route::resource('students', StudentManagementController::class)->only(['index', 'edit', 'update']);
     Route::resource('materials', MaterialController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::get('tugas-pertemuan', [MeetingAssignmentController::class, 'index'])->name('meeting-assignments.index');
+    Route::post('tugas-pertemuan', [MeetingAssignmentController::class, 'store'])->name('meeting-assignments.store');
+    Route::get('tugas-pertemuan/{meetingAssignment}', [MeetingAssignmentController::class, 'show'])->name('meeting-assignments.show');
+    Route::post('tugas-pertemuan/{meetingAssignment}/kumpulkan', [MeetingAssignmentController::class, 'submit'])->name('meeting-assignments.submit');
+    Route::delete('tugas-pertemuan/{meetingAssignment}', [MeetingAssignmentController::class, 'destroy'])->name('meeting-assignments.destroy');
+    Route::put('pengumpulan-pertemuan/{meetingSubmission}/nilai', [MeetingAssignmentController::class, 'grade'])->name('meeting-submissions.grade');
+    Route::get('pengumpulan-pertemuan/{meetingSubmission}/karya', [MeetingAssignmentController::class, 'file'])->name('meeting-submissions.file');
     Route::get('tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');
     Route::post('tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
     Route::resource('tasks', TaskController::class)->only(['index', 'show', 'create', 'store', 'edit', 'update', 'destroy']);

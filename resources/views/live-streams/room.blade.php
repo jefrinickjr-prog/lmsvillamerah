@@ -15,7 +15,14 @@
         <h2 class="meeting-title">{{ $liveStream->title }}</h2>
         <p class="meeting-subtitle">{{ $liveStream->classroom->title }} · {{ $liveStream->classroom->branch }}</p>
       </div>
-      <a href="{{ route('live-streams.index') }}" class="meeting-exit"><i class="fa-solid fa-phone-slash"></i><span>Keluar dari Ruang</span></a>
+      @if($isHost)
+        <form id="endLiveForm" method="POST" action="{{ route('live-streams.end', $liveStream) }}">
+          @csrf
+          <button type="submit" class="meeting-exit border-0"><i class="fa-solid fa-phone-slash"></i><span>Akhiri Live untuk Semua</span></button>
+        </form>
+      @else
+        <a href="{{ route('live-streams.index') }}" class="meeting-exit"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar dari Ruang</span></a>
+      @endif
     </header>
 
     <div class="meeting-body">
@@ -48,6 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const loading = document.getElementById('meetingLoading');
   const status = document.getElementById('meetingStatus');
   const retry = document.getElementById('meetingRetry');
+  const endLiveForm = document.getElementById('endLiveForm');
+  const statusUrl = @json(route('live-streams.status', $liveStream));
+  const indexUrl = @json(route('live-streams.index'));
+  const isHost = @json($isHost);
+  let api;
+  let endingForEveryone = false;
   const fail = message => {
     status.textContent = message;
     retry.classList.add('is-visible');
@@ -61,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   try {
-    const api = new JitsiMeetExternalAPI(@json($jitsiDomain), {
+    api = new JitsiMeetExternalAPI(@json($jitsiDomain), {
       roomName: @json($jitsiRoomName),
       jwt: @json($jitsiJwt),
       parentNode: document.getElementById('jitsiMeeting'),
@@ -89,7 +102,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     api.addListener('videoConferenceJoined', () => loading.classList.add('is-hidden'));
-    api.addListener('readyToClose', () => window.location.assign(@json(route('live-streams.index'))));
+    const endSessionOnServer = () => fetch(@json(route('live-streams.end', $liveStream)), {
+      method: 'POST',
+      headers: {'X-CSRF-TOKEN': @json(csrf_token()), 'Accept': 'application/json'},
+      keepalive: true,
+    });
+
+    endLiveForm?.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!window.confirm('Akhiri live streaming untuk seluruh peserta?')) return;
+      endingForEveryone = true;
+      await endSessionOnServer();
+      api.executeCommand('hangup');
+      window.location.assign(indexUrl);
+    });
+
+    api.addListener('readyToClose', async () => {
+      if (isHost && !endingForEveryone) await endSessionOnServer();
+      window.location.assign(indexUrl);
+    });
     api.addListener('cameraError', () => {
       status.textContent = 'Browser tidak dapat mengakses kamera. Periksa izin kamera jika ingin menyalakan video.';
     });
@@ -100,6 +131,20 @@ document.addEventListener('DOMContentLoaded', () => {
         retry.classList.add('is-visible');
       }
     }, 20000);
+
+    window.setInterval(async () => {
+      try {
+        const response = await fetch(statusUrl, {headers:{'Accept':'application/json'}, cache:'no-store'});
+        if (!response.ok) return;
+        const session = await response.json();
+        if (session.ended) {
+          api.executeCommand('hangup');
+          window.location.assign(indexUrl);
+        }
+      } catch (error) {
+        // Gangguan jaringan sementara tidak langsung mengeluarkan peserta.
+      }
+    }, 4000);
   } catch (error) {
     fail(error?.message || 'Ruang Jitsi Meet tidak dapat dibuka.');
   }

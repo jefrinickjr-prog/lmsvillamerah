@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Material;
+use App\Models\MeetingSubmission;
 use App\Models\Submission;
 use App\Models\Task;
 use App\Models\User;
@@ -27,7 +28,17 @@ class StudentPageController extends Controller
             ->whereNotNull('score')
             ->avg('score');
 
-        return view('student.grades', compact('submissions', 'averageScore'));
+        $meetingSubmissions = MeetingSubmission::with(['assignment.classroom', 'grader'])
+            ->where('student_id', Auth::id())
+            ->latest('submitted_at')
+            ->get();
+        $meetingAverage = $meetingSubmissions->whereNotNull('score')->map(
+            fn ($submission) => $submission->assignment->max_score > 0
+                ? ($submission->score / $submission->assignment->max_score) * 100
+                : null
+        )->filter(fn ($score) => $score !== null)->avg();
+
+        return view('student.grades', compact('submissions', 'averageScore', 'meetingSubmissions', 'meetingAverage'));
     }
 
     public function attendance()

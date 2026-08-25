@@ -1,35 +1,7 @@
 @extends('layouts.app')
-
 @section('title', 'Penilaian')
-
 @section('content')
-  <div class="mb-6">
-    <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Halaman Siswa</p>
-    <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Penilaian</h2>
-    <p class="mt-2 text-slate-500">Lihat nilai tugas yang sudah diperiksa oleh pengajar.</p>
-  </div>
-
-  <div class="mb-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-    <div class="text-sm font-bold text-slate-500">Rata-rata Nilai</div>
-    <div class="mt-3 text-5xl font-black text-indigo-600">{{ $averageScore ? number_format($averageScore, 1) : '-' }}</div>
-  </div>
-
-  <section class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-    <h3 class="mb-5 text-lg font-black text-slate-950">Riwayat Nilai</h3>
-    <div class="divide-y divide-slate-100">
-      @forelse($submissions as $submission)
-        <div class="flex flex-col justify-between gap-3 py-4 sm:flex-row sm:items-center">
-          <div>
-            <div class="font-black text-slate-900">{{ $submission->task->title ?? 'Tugas' }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ $submission->task->material->title ?? 'Tanpa video' }}</div>
-          </div>
-          <div class="rounded-2xl bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700">
-            {{ is_null($submission->score) ? 'Belum dinilai' : $submission->score }}
-          </div>
-        </div>
-      @empty
-        <div class="rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">Belum ada nilai yang tersedia.</div>
-      @endforelse
-    </div>
-  </section>
+<div class="mb-6"><p class="text-sm font-black uppercase tracking-wider text-indigo-500">Perkembangan Siswa</p><h2 class="mt-1 text-3xl font-black">Penilaian</h2><p class="mt-2 text-slate-500">Nilai dan masukan mentor untuk karya yang dikumpulkan setiap pertemuan.</p></div>
+<div class="mb-6 grid gap-4 sm:grid-cols-2"><div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div class="text-sm font-bold text-slate-500">Rata-rata Tugas Pertemuan</div><div class="mt-3 text-5xl font-black text-indigo-600">{{ $meetingAverage !== null ? number_format($meetingAverage, 1) : '-' }}</div><div class="mt-1 text-xs text-slate-400">Skala 100</div></div><div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div class="text-sm font-bold text-slate-500">Karya Terkumpul</div><div class="mt-3 text-5xl font-black text-emerald-600">{{ $meetingSubmissions->count() }}</div><a href="{{ route('meeting-assignments.index') }}" class="mt-2 inline-block text-sm font-black text-indigo-600">Buka Tugas Pertemuan →</a></div></div>
+<section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h3 class="mb-5 text-lg font-black">Riwayat Penilaian Karya</h3><div class="space-y-4">@forelse($meetingSubmissions as $item)<article class="rounded-2xl border border-slate-200 p-5"><div class="flex flex-wrap items-start justify-between gap-3"><div><h4 class="font-black">{{ $item->assignment->title }}</h4><p class="mt-1 text-sm text-slate-500">{{ $item->assignment->classroom->title }} · {{ $item->assignment->meeting_date->format('d M Y') }}</p></div><span class="rounded-xl px-4 py-2 font-black {{ $item->score === null ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700' }}">{{ $item->score === null ? 'Belum dinilai' : $item->score.'/'.$item->assignment->max_score }}</span></div>@if($item->feedback)<div class="mt-4 rounded-xl bg-slate-50 p-4 text-sm"><b>Catatan mentor:</b><p class="mt-2 whitespace-pre-wrap text-slate-600">{{ $item->feedback }}</p></div>@endif<a target="_blank" href="{{ route('meeting-submissions.file', $item) }}" class="mt-3 inline-block text-sm font-black text-indigo-600">Lihat karya</a></article>@empty<div class="rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">Belum ada karya pertemuan yang dikumpulkan.</div>@endforelse</div></section>
 @endsection
