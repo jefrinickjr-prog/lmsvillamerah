@@ -70,7 +70,6 @@ class GoogleSharedDriveService
         if ($submission->drive_file_id) unset($metadata['parents']);
         $request = Http::withToken($token)
             ->timeout(120)
-            ->retry(3, 1000)
             ->attach('metadata', json_encode($metadata), 'metadata.json', ['Content-Type' => 'application/json; charset=UTF-8'])
             ->attach('file', fopen($localPath, 'rb'), basename($localPath), ['Content-Type' => $mime]);
         $response = $submission->drive_file_id ? $request->patch($url) : $request->post($url);
