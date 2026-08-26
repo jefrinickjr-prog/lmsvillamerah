@@ -12,6 +12,7 @@ use RuntimeException;
 class GoogleSharedDriveService
 {
     private const API = 'https://www.googleapis.com/drive/v3';
+    private const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
 
     public function configured(): bool
     {
@@ -66,7 +67,7 @@ class GoogleSharedDriveService
         $token = $this->accessToken();
         $mime = mime_content_type($localPath) ?: 'application/octet-stream';
         $query = '?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink';
-        $url = self::API.'/files'.($submission->drive_file_id ? '/'.$submission->drive_file_id : '').$query;
+        $url = self::UPLOAD_API.'/files'.($submission->drive_file_id ? '/'.$submission->drive_file_id : '').$query;
         if ($submission->drive_file_id) unset($metadata['parents']);
         $request = Http::withToken($token)
             ->timeout(120)
