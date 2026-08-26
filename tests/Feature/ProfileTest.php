@@ -63,6 +63,11 @@ class ProfileTest extends TestCase
 
         $this->assertNotNull($user->photo_path);
         Storage::disk('public')->assertExists($user->photo_path);
+
+        $this->actingAs($user)
+            ->get(route('profile.photo'))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
     }
 
     public function test_user_can_update_password_with_current_password(): void

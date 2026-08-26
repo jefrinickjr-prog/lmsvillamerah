@@ -216,7 +216,7 @@
           'teacher' => 'Pengajar',
           'student' => 'Siswa',
         ][$user->role ?? 'student'] ?? 'Siswa';
-        $photoUrl = $user->photo_path ? asset('storage/'.$user->photo_path) : null;
+        $photoUrl = $user->photo_path ? route('profile.photo', ['v' => $user->updated_at?->timestamp]) : null;
         $isExamFocus = request()->routeIs('attempts.show');
 
         $navItems = [

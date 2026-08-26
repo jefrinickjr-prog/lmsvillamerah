@@ -10,7 +10,7 @@
       'teacher' => 'Pengajar',
       'student' => 'Siswa',
     ][$user->role ?? 'student'] ?? 'Siswa';
-    $photoUrl = $user->photo_path ? asset('storage/'.$user->photo_path) : null;
+    $photoUrl = $user->photo_path ? route('profile.photo', ['v' => $user->updated_at?->timestamp]) : null;
   @endphp
 
   <div class="mb-6">
@@ -76,7 +76,7 @@
           <div>
             <label for="photo" class="text-sm font-bold text-slate-700">Foto Profil</label>
             <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white">
-            <p class="mt-2 text-xs font-semibold text-slate-400">Format JPG, PNG, atau WEBP. Maksimal 2 MB.</p>
+            <p class="mt-2 text-xs font-semibold text-slate-400">Format JPG, PNG, atau WEBP. Maksimal 5 MB.</p>
             @error('photo')
               <div class="mt-2 text-sm font-semibold text-rose-600">{{ $message }}</div>
             @enderror

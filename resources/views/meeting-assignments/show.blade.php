@@ -1,6 +1,21 @@
 @extends('layouts.app')
 @section('title', $meetingAssignment->title)
 @section('content')
+<style>
+  form[action*="/grade"] > button {
+    align-items: center;
+    background: linear-gradient(135deg, #047857, #10b981) !important;
+    border: 2px solid #0f172a !important;
+    color: #fff !important;
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+  }
+  form[action*="/grade"] > button:hover { background: #065f46 !important; }
+</style>
 <div class="flex flex-wrap items-start justify-between gap-4"><div><a href="{{ route('meeting-assignments.index') }}" class="text-sm font-black text-indigo-600">← Kembali</a><h2 class="mt-3 text-3xl font-black">{{ $meetingAssignment->title }}</h2><p class="mt-2 font-bold text-indigo-600">{{ $meetingAssignment->classroom->title }} · {{ $meetingAssignment->classroom->branch }} · {{ $meetingAssignment->meeting_date->format('d M Y') }}</p></div>@if(auth()->user()->role !== 'student')<form method="post" action="{{ route('meeting-assignments.destroy', $meetingAssignment) }}" onsubmit="return confirm('Hapus tugas pertemuan ini beserta semua karya siswa?')">@csrf @method('DELETE')<button class="rounded-xl border-2 border-slate-900 bg-rose-50 px-5 py-3 font-black text-rose-700 transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">Hapus</button></form>@endif</div>
 <div class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h3 class="font-black">Instruksi</h3><div class="mt-3 whitespace-pre-wrap leading-7 text-slate-600">{{ $meetingAssignment->instructions ?: 'Tidak ada instruksi tambahan.' }}</div><div class="mt-4 text-sm font-bold text-slate-500">Batas pengumpulan: {{ $meetingAssignment->due_at->format('d M Y H:i') }}</div></div>
 
