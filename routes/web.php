@@ -67,6 +67,7 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     Route::post('tugas-pertemuan/{meetingAssignment}/kumpulkan', [MeetingAssignmentController::class, 'submit'])->name('meeting-assignments.submit');
     Route::delete('tugas-pertemuan/{meetingAssignment}', [MeetingAssignmentController::class, 'destroy'])->name('meeting-assignments.destroy');
     Route::put('pengumpulan-pertemuan/{meetingSubmission}/nilai', [MeetingAssignmentController::class, 'grade'])->name('meeting-submissions.grade');
+    Route::post('pengumpulan-pertemuan/{meetingSubmission}/sinkronkan', [MeetingAssignmentController::class, 'retrySync'])->name('meeting-submissions.retry-sync');
     Route::get('pengumpulan-pertemuan/{meetingSubmission}/karya', [MeetingAssignmentController::class, 'file'])->name('meeting-submissions.file');
     Route::get('tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');
     Route::post('tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');

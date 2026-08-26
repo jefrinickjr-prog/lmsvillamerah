@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncMeetingSubmissionToGoogleDrive;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\MeetingAssignment;
@@ -91,7 +92,7 @@ class MeetingAssignmentController extends Controller
         $existing = $meetingAssignment->submissions()->where('student_id', Auth::id())->first();
         $path = $request->file('work')->store('meeting-works', 'local');
 
-        DB::transaction(function () use ($meetingAssignment, $data, $existing, $path): void {
+        $submission = DB::transaction(function () use ($meetingAssignment, $data, $path): MeetingSubmission {
             $submission = MeetingSubmission::updateOrCreate([
                 'meeting_assignment_id' => $meetingAssignment->id,
                 'student_id' => Auth::id(),
@@ -103,6 +104,9 @@ class MeetingAssignmentController extends Controller
                 'feedback' => null,
                 'graded_by' => null,
                 'graded_at' => null,
+                'drive_sync_status' => config('google-drive.enabled') ? 'pending' : 'disabled',
+                'drive_sync_error' => null,
+                'drive_synced_at' => null,
             ]);
 
             Attendance::updateOrCreate([
@@ -113,9 +117,12 @@ class MeetingAssignmentController extends Controller
                 'date' => $meetingAssignment->meeting_date->toDateString(),
                 'present' => true,
             ]);
+
+            return $submission;
         });
 
         if ($existing && $existing->work_path !== $path) Storage::disk('local')->delete($existing->work_path);
+        if (config('google-drive.enabled')) SyncMeetingSubmissionToGoogleDrive::dispatch($submission->id);
 
         return back()->with('success', 'Karya berhasil dikumpulkan dan kehadiran Anda tercatat otomatis.');
     }
@@ -133,11 +140,25 @@ class MeetingAssignmentController extends Controller
         return back()->with('success', 'Nilai karya siswa berhasil disimpan.');
     }
 
+    public function retrySync(MeetingSubmission $meetingSubmission)
+    {
+        $assignment = $meetingSubmission->assignment()->with('classroom')->firstOrFail();
+        abort_unless($this->canManage($assignment->classroom), 403);
+        abort_unless(config('google-drive.enabled'), 422, 'Integrasi Google Drive belum diaktifkan.');
+        $meetingSubmission->update(['drive_sync_status' => 'pending', 'drive_sync_error' => null]);
+        SyncMeetingSubmissionToGoogleDrive::dispatch($meetingSubmission->id);
+
+        return back()->with('success', 'Sinkronisasi Google Drive dimasukkan kembali ke antrean.');
+    }
+
     public function file(MeetingSubmission $meetingSubmission)
     {
         $assignment = $meetingSubmission->assignment()->with('classroom')->firstOrFail();
         $allowed = (Auth::id() === $meetingSubmission->student_id) || $this->canManage($assignment->classroom);
         abort_unless($allowed, 403);
+        if (! Storage::disk('local')->exists($meetingSubmission->work_path) && $meetingSubmission->drive_web_view_link) {
+            return redirect()->away($meetingSubmission->drive_web_view_link);
+        }
         abort_unless(Storage::disk('local')->exists($meetingSubmission->work_path), 404);
 
         return Storage::disk('local')->response($meetingSubmission->work_path);

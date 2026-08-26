@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SyncMeetingSubmissionToGoogleDrive;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\MeetingAssignment;
@@ -10,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class MeetingAssignmentTest extends TestCase
@@ -39,6 +41,8 @@ class MeetingAssignmentTest extends TestCase
     public function test_uploading_work_automatically_marks_student_present(): void
     {
         Storage::fake('local');
+        Queue::fake();
+        config(['google-drive.enabled' => true]);
         [$teacher, $student, $classroom] = $this->classSetup();
         $assignment = MeetingAssignment::create([
             'classroom_id' => $classroom->id,
@@ -56,6 +60,7 @@ class MeetingAssignmentTest extends TestCase
 
         $submission = MeetingSubmission::firstOrFail();
         Storage::disk('local')->assertExists($submission->work_path);
+        Queue::assertPushed(SyncMeetingSubmissionToGoogleDrive::class, fn ($job) => $job->submissionId === $submission->id);
         $this->assertDatabaseHas('attendances', [
             'classroom_id' => $classroom->id,
             'student_id' => $student->id,

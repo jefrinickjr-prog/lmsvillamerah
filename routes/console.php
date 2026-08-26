@@ -1,6 +1,9 @@
 <?php
 
+use App\Jobs\SyncMeetingSubmissionToGoogleDrive;
+use App\Models\MeetingSubmission;
 use App\Models\User;
+use App\Services\GoogleSharedDriveService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -11,6 +14,29 @@ use Illuminate\Support\Facades\Schema;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('google-drive:check', function () {
+    try {
+        $folder = app(GoogleSharedDriveService::class)->testConnection();
+        $this->info('Google Shared Drive terhubung. Folder induk: '.($folder['name'] ?? $folder['id']));
+        return self::SUCCESS;
+    } catch (Throwable $error) {
+        $this->error('Google Shared Drive gagal: '.$error->getMessage());
+        return self::FAILURE;
+    }
+})->purpose('Verify the production Google Workspace Shared Drive connection');
+
+Artisan::command('meeting-submissions:sync-pending', function () {
+    $count = 0;
+    MeetingSubmission::whereIn('drive_sync_status', ['pending', 'failed', 'disabled'])
+        ->orderBy('id')->each(function (MeetingSubmission $submission) use (&$count): void {
+            $submission->update(['drive_sync_status' => 'pending', 'drive_sync_error' => null]);
+            SyncMeetingSubmissionToGoogleDrive::dispatch($submission->id);
+            $count++;
+        });
+    $this->info($count.' pengumpulan dimasukkan ke antrean Google Drive.');
+    return self::SUCCESS;
+})->purpose('Queue pending meeting submissions for Google Drive synchronization');
 
 Artisan::command('lms:create-super-admin {email} {password} {--name=Super Admin}', function (string $email, string $password) {
     if (! Schema::hasTable('users')) {

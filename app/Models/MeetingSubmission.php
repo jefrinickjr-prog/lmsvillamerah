@@ -10,7 +10,7 @@ class MeetingSubmission extends Model
 
     protected function casts(): array
     {
-        return ['submitted_at' => 'datetime', 'graded_at' => 'datetime'];
+        return ['submitted_at' => 'datetime', 'graded_at' => 'datetime', 'drive_synced_at' => 'datetime'];
     }
 
     public function assignment() { return $this->belongsTo(MeetingAssignment::class, 'meeting_assignment_id'); }
