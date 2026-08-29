@@ -70,4 +70,31 @@ class AcademicSettingsTest extends TestCase
             'room' => 'Studio 1',
         ]);
     }
+
+    public function test_registration_places_student_directly_into_selected_classroom(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $category = ProgramCategory::where('code', 'gambar')->firstOrFail();
+        $program = ClassProgram::where('program_category_id', $category->id)->firstOrFail();
+        $branch = Branch::firstOrFail();
+        $period = AcademicPeriod::where('is_default', true)->firstOrFail();
+        $classroom = Classroom::create([
+            'class_program_id' => $program->id, 'branch_id' => $branch->id,
+            'academic_period_id' => $period->id, 'program_type' => $category->code,
+            'title' => $program->name, 'section_name' => 'Sore A', 'capacity' => 16,
+            'branch' => $branch->name, 'teacher_id' => $teacher->id,
+        ]);
+
+        $this->actingAs($teacher)->post(route('register.post'), [
+            'name' => 'Siswa Otomatis', 'email' => 'otomatis@example.com',
+            'classroom_id' => $classroom->id, 'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect(route('register'));
+
+        $student = User::where('email', 'otomatis@example.com')->firstOrFail();
+        $this->assertNotNull($student->student_code);
+        $this->assertDatabaseHas('classroom_enrollments', [
+            'classroom_id' => $classroom->id, 'student_id' => $student->id, 'status' => 'active',
+        ]);
+    }
 }
