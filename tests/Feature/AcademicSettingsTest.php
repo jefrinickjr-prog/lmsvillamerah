@@ -57,5 +57,17 @@ class AcademicSettingsTest extends TestCase
         $this->actingAs($teacher)->post(route('classrooms.enroll', $classroom), ['student_id' => $student->id])->assertRedirect();
         $this->assertDatabaseHas('classroom_enrollments', ['classroom_id' => $classroom->id, 'student_id' => $student->id, 'status' => 'active']);
         $this->actingAs($teacher)->get(route('classrooms.roster', $classroom))->assertOk()->assertSee($student->name)->assertSee('1 / 1');
+
+        $this->actingAs($teacher)->post(route('classrooms.schedules.store', $classroom), [
+            'day_of_week' => 1,
+            'starts_at' => '08:00',
+            'ends_at' => '10:00',
+            'room' => 'Studio 1',
+        ])->assertRedirect();
+        $this->assertDatabaseHas('classroom_schedules', [
+            'classroom_id' => $classroom->id,
+            'day_of_week' => 1,
+            'room' => 'Studio 1',
+        ]);
     }
 }
