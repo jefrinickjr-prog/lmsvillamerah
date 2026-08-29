@@ -33,21 +33,7 @@ class AttendanceController extends Controller
         $attendanceByStudent = collect();
 
         if ($selectedClassroom) {
-            $classKeys = User::studentClassLookupKeys($selectedClassroom->title);
-            $branchKeys = User::branchLookupKeys($selectedClassroom->branch);
-            $students = User::where('role', 'student')
-                ->where(function ($query) use ($classKeys) {
-                    foreach ($classKeys as $classKey) {
-                        $query->orWhereRaw('LOWER(TRIM(student_class)) = ?', [$classKey]);
-                    }
-                })
-                ->where(function ($query) use ($branchKeys) {
-                    foreach ($branchKeys as $branchKey) {
-                        $query->orWhereRaw('LOWER(TRIM(branch)) = ?', [$branchKey]);
-                    }
-                })
-                ->orderBy('name')
-                ->get();
+            $students = $this->studentsForClassroom($selectedClassroom);
 
             $attendanceByStudent = Attendance::with('student')
                 ->where('classroom_id', $selectedClassroom->id)
@@ -177,6 +163,10 @@ class AttendanceController extends Controller
 
     private function studentsForClassroom(Classroom $classroom)
     {
+        if ($classroom->class_program_id) {
+            return $classroom->activeStudents()->orderBy('name')->get();
+        }
+
         $classKeys = User::studentClassLookupKeys($classroom->title);
         $branchKeys = User::branchLookupKeys($classroom->branch);
 

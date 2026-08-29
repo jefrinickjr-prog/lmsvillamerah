@@ -355,6 +355,12 @@ class LiveStreamController extends Controller
     {
         $user = Auth::user();
 
+        if ($classroom->class_program_id) {
+            return $classroom->delivery_mode === 'online'
+                && ($user->delivery_mode ?? 'offline') === 'online'
+                && $user->activeClassrooms()->whereKey($classroom->id)->exists();
+        }
+
         return $classroom->delivery_mode === 'online'
             && ($user->delivery_mode ?? 'offline') === 'online'
             && $classroom->program_type === User::normalizeProgramType($user->program_type)

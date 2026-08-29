@@ -6,6 +6,8 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\ClassroomRosterController;
+use App\Http\Controllers\AcademicSettingController;
 use App\Http\Controllers\LiveStreamController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProfileController;
@@ -47,6 +49,17 @@ Route::middleware(['auth', 'admin.approved'])->group(function () {
     })->name('dashboard');
 
     Route::resource('classrooms', ClassroomController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::get('classrooms/{classroom}/anggota', [ClassroomRosterController::class, 'show'])->name('classrooms.roster');
+    Route::post('classrooms/{classroom}/anggota', [ClassroomRosterController::class, 'enroll'])->name('classrooms.enroll');
+    Route::delete('classrooms/{classroom}/anggota/{student}', [ClassroomRosterController::class, 'remove'])->name('classrooms.remove-student');
+    Route::post('classrooms/{classroom}/jadwal', [ClassroomRosterController::class, 'storeSchedule'])->name('classrooms.schedules.store');
+    Route::delete('classrooms/{classroom}/jadwal/{schedule}', [ClassroomRosterController::class, 'destroySchedule'])->name('classrooms.schedules.destroy');
+    Route::get('pengaturan-akademik', [AcademicSettingController::class, 'index'])->name('academic-settings.index');
+    Route::post('pengaturan-akademik/kategori', [AcademicSettingController::class, 'storeCategory'])->name('academic-settings.categories.store');
+    Route::post('pengaturan-akademik/program', [AcademicSettingController::class, 'storeProgram'])->name('academic-settings.programs.store');
+    Route::post('pengaturan-akademik/cabang', [AcademicSettingController::class, 'storeBranch'])->name('academic-settings.branches.store');
+    Route::post('pengaturan-akademik/periode', [AcademicSettingController::class, 'storePeriod'])->name('academic-settings.periods.store');
+    Route::patch('pengaturan-akademik/{type}/{id}/status', [AcademicSettingController::class, 'toggle'])->name('academic-settings.toggle');
     Route::get('live-streams', [LiveStreamController::class, 'index'])->name('live-streams.index');
     Route::post('live-streams', [LiveStreamController::class, 'store'])->name('live-streams.store');
     Route::get('live-streams/{liveStream}/edit', [LiveStreamController::class, 'edit'])->name('live-streams.edit');

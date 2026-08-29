@@ -243,6 +243,12 @@
             'active' => request()->routeIs('classrooms.*'),
           ]]);
           $navItems[] = [
+            'label' => 'Pengaturan Akademik',
+            'icon' => 'fa-solid fa-sliders',
+            'route' => 'academic-settings.index',
+            'active' => request()->routeIs('academic-settings.*'),
+          ];
+          $navItems[] = [
             'label' => 'Siswa',
             'icon' => 'fa-solid fa-users',
             'route' => 'students.index',

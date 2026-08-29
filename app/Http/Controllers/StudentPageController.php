@@ -143,6 +143,11 @@ class StudentPageController extends Controller
 
     private function studentClassroom(User $student): ?Classroom
     {
+        $enrolledClassroom = $student->activeClassrooms()->where('classrooms.is_active', true)->first();
+        if ($enrolledClassroom) {
+            return $enrolledClassroom;
+        }
+
         $studentClassKeys = User::studentClassLookupKeys($student->student_class);
         $branchKeys = User::branchLookupKeys($student->branch);
 

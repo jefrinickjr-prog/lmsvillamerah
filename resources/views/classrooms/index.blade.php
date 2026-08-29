@@ -21,7 +21,7 @@
         <div class="grid h-12 w-12 place-items-center rounded-2xl bg-indigo-100 text-indigo-700">
           <i class="fa-solid fa-chalkboard-user"></i>
         </div>
-        <h3 class="mt-5 text-lg font-black text-slate-950">{{ $classroom->title }}</h3>
+        <h3 class="mt-5 text-lg font-black text-slate-950">{{ $classroom->display_name }}</h3>
         <div class="mt-2 flex flex-wrap gap-2">
           <span class="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide {{ ($classroom->delivery_mode ?? 'offline') === 'online' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">{{ ($classroom->delivery_mode ?? 'offline') === 'online' ? 'Online' : 'Offline' }}</span>
           <span class="inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-700">{{ \App\Models\User::programTypeLabel($classroom->program_type ?? 'gambar') }}</span>
@@ -30,8 +30,11 @@
         <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ $classroom->description ?: 'Tidak ada deskripsi.' }}</p>
         <div class="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
           Pengajar: {{ $classroom->teacher->name ?? '-' }}
+          <div class="mt-2 text-slate-700"><i class="fa-solid fa-users mr-2 text-indigo-500"></i>{{ $classroom->active_enrollments_count }} / {{ $classroom->capacity }} siswa</div>
+          <div class="mt-2 text-xs">{{ $classroom->academicPeriod->name ?? 'Periode belum diatur' }}</div>
         </div>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <a href="{{ route('classrooms.roster', $classroom) }}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-black text-white hover:bg-indigo-700"><i class="fa-solid fa-users-gear"></i>Anggota & Jadwal</a>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
           <a href="{{ route('classrooms.edit', $classroom) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
             <i class="fa-solid fa-pen-to-square"></i>
             Edit

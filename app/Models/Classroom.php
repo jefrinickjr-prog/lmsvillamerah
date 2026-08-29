@@ -10,7 +10,12 @@ class Classroom extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['program_type', 'delivery_mode', 'title', 'branch', 'description', 'teacher_id'];
+    protected $fillable = ['class_program_id', 'branch_id', 'academic_period_id', 'program_type', 'delivery_mode', 'title', 'section_name', 'capacity', 'is_active', 'branch', 'description', 'teacher_id'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean', 'capacity' => 'integer'];
+    }
 
     public function teacher()
     {
@@ -36,4 +41,14 @@ class Classroom extends Model
     {
         return $this->hasMany(MeetingAssignment::class);
     }
+
+    public function program() { return $this->belongsTo(ClassProgram::class, 'class_program_id'); }
+    public function branchMaster() { return $this->belongsTo(Branch::class, 'branch_id'); }
+    public function academicPeriod() { return $this->belongsTo(AcademicPeriod::class); }
+    public function schedules() { return $this->hasMany(ClassroomSchedule::class)->orderBy('day_of_week')->orderBy('starts_at'); }
+    public function enrollments() { return $this->hasMany(ClassroomEnrollment::class); }
+    public function activeEnrollments() { return $this->hasMany(ClassroomEnrollment::class)->where('status', 'active'); }
+    public function students() { return $this->belongsToMany(User::class, 'classroom_enrollments', 'classroom_id', 'student_id')->withPivot(['status','joined_at','left_at','assigned_by','notes'])->withTimestamps(); }
+    public function activeStudents() { return $this->students()->wherePivot('status', 'active'); }
+    public function getDisplayNameAttribute(): string { return $this->title.' — '.($this->section_name ?: 'Umum'); }
 }

@@ -180,6 +180,10 @@ class MeetingAssignmentController extends Controller
 
     private function studentCanAccess(Classroom $classroom, User $student): bool
     {
+        if ($classroom->class_program_id) {
+            return $student->activeClassrooms()->whereKey($classroom->id)->exists();
+        }
+
         return $classroom->program_type === User::normalizeProgramType($student->program_type)
             && in_array(User::normalizeStudentClass($classroom->title), User::studentClassLookupKeys($student->student_class), true)
             && in_array(User::normalizeBranch($classroom->branch), User::branchLookupKeys($student->branch), true);
@@ -187,6 +191,11 @@ class MeetingAssignmentController extends Controller
 
     private function studentAssignmentQuery($query, User $student)
     {
+        $activeClassroomIds = $student->activeClassrooms()->pluck('classrooms.id');
+        if ($activeClassroomIds->isNotEmpty()) {
+            return $query->whereIn('classroom_id', $activeClassroomIds);
+        }
+
         $classes = User::studentClassLookupKeys($student->student_class);
         $branches = User::branchLookupKeys($student->branch);
         return $query->whereHas('classroom', function ($classroom) use ($student, $classes, $branches): void {
@@ -198,6 +207,10 @@ class MeetingAssignmentController extends Controller
 
     private function studentsForClassroom(Classroom $classroom)
     {
+        if ($classroom->class_program_id) {
+            return $classroom->activeStudents()->orderBy('name')->get();
+        }
+
         return User::where('role', 'student')->get()->filter(fn (User $student) => $this->studentCanAccess($classroom, $student));
     }
 }

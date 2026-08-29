@@ -115,6 +115,20 @@ class User extends Authenticatable
         return $this->belongsTo(self::class, 'approved_by');
     }
 
+    public function classroomEnrollments() { return $this->hasMany(ClassroomEnrollment::class, 'student_id'); }
+    public function activeClassrooms() { return $this->belongsToMany(Classroom::class, 'classroom_enrollments', 'student_id', 'classroom_id')->wherePivot('status', 'active')->withPivot(['status','joined_at','left_at','assigned_by','notes'])->withTimestamps(); }
+
+    public function canAccessClassroom(Classroom $classroom): bool
+    {
+        if (($this->role ?? null) !== 'student') return false;
+        $activeIds = $this->activeClassrooms()->pluck('classrooms.id');
+        if ($activeIds->isNotEmpty()) return $activeIds->contains($classroom->id);
+
+        return $classroom->program_type === self::normalizeProgramType($this->program_type)
+            && in_array(self::normalizeStudentClass($classroom->title), self::studentClassLookupKeys($this->student_class), true)
+            && in_array(self::normalizeBranch($classroom->branch), self::branchLookupKeys($this->branch), true);
+    }
+
     public function needsAdminApproval(): bool
     {
         return ($this->role ?? null) === 'admin' && $this->approved_at === null;

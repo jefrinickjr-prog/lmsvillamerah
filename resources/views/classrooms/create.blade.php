@@ -28,37 +28,35 @@
           </select>
         </div>
         <div>
-          <label class="mb-2 block text-sm font-bold text-slate-700">Grup Program</label>
-          <select name="program_type" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
-            @foreach($programTypes as $value => $label)
-              <option value="{{ $value }}" @selected(old('program_type', 'gambar') === $value)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-bold text-slate-700">Kelas Program</label>
-          <select name="title" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
-            <option value="">Pilih kelas program</option>
-            @foreach($studentClassesByProgram as $programType => $classes)
-              <optgroup label="{{ $programTypes[$programType] ?? ucfirst($programType) }}">
-                @foreach($classes as $studentClass)
-                  <option value="{{ $studentClass }}" @selected(old('title') === $studentClass)>{{ $studentClass }}</option>
+          <label class="mb-2 block text-sm font-bold text-slate-700">Program Kelas</label>
+          <select name="class_program_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" required>
+            <option value="">Pilih program</option>
+            @foreach($classPrograms->groupBy(fn($program) => $program->category->name) as $category => $items)
+              <optgroup label="{{ $category }}">
+                @foreach($items as $program)
+                  <option value="{{ $program->id }}" @selected(old('class_program_id') == $program->id)>{{ $program->name }}</option>
                 @endforeach
               </optgroup>
             @endforeach
           </select>
         </div>
 
+        <div class="grid gap-5 sm:grid-cols-2">
+          <label class="block text-sm font-bold text-slate-700">Nama Kelompok / Sesi<input name="section_name" value="{{ old('section_name', 'Pagi A') }}" placeholder="Pagi A, Siang A, Sore A" class="mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" required></label>
+          <label class="block text-sm font-bold text-slate-700">Kapasitas<input type="number" name="capacity" value="{{ old('capacity', 20) }}" min="1" max="999" class="mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" required></label>
+        </div>
+
         <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Cabang</label>
-          <select name="branch" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
+          <select name="branch_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100" required>
             <option value="">Pilih cabang</option>
-            @foreach($branches as $branch)
-              <option value="{{ $branch }}" @selected(old('branch') === $branch)>{{ $branch }}</option>
+            @foreach($branchRecords as $branch)
+              <option value="{{ $branch->id }}" @selected(old('branch_id') == $branch->id)>{{ $branch->name }}</option>
             @endforeach
           </select>
         </div>
+
+        <div><label class="mb-2 block text-sm font-bold text-slate-700">Periode Akademik</label><select name="academic_period_id" class="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" required>@foreach($periods as $period)<option value="{{ $period->id }}" @selected(old('academic_period_id') == $period->id || (!old('academic_period_id') && $period->is_default))>{{ $period->name }}{{ $period->is_default ? ' · Aktif' : '' }}</option>@endforeach</select></div>
 
         <div>
           <label class="mb-2 block text-sm font-bold text-slate-700">Deskripsi</label>
