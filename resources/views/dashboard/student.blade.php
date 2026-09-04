@@ -1,139 +1,16 @@
 @extends('layouts.app')
-
-@section('title', 'Dashboard Siswa')
-
+@section('title','Dashboard Siswa')
 @section('content')
-  @php
-    $studentClass = auth()->user()->student_class;
-    $branch = auth()->user()->branch;
-    $programType = \App\Models\User::normalizeProgramType(auth()->user()->program_type);
-    $videoAccesses = auth()->user()->videoAccesses();
-    $studentClassKeys = \App\Models\User::studentClassLookupKeys($studentClass);
-    $latestTasks = \App\Models\Task::with(['classrooms', 'material.classroom', 'material.classrooms'])
-      ->when($studentClassKeys === [], fn ($query) => $query->whereRaw('1 = 0'))
-      ->when($studentClassKeys !== [], function ($query) use ($studentClassKeys) {
-        $query->where(function ($taskQuery) use ($studentClassKeys) {
-          $taskQuery
-            ->whereHas('classrooms', function ($classroomQuery) use ($studentClassKeys) {
-              $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
-                foreach ($studentClassKeys as $studentClassKey) {
-                  $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-                }
-              });
-            })
-            ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
-              $fallbackQuery
-                ->doesntHave('classrooms')
-                ->whereHas('material.classrooms', function ($classroomQuery) use ($studentClassKeys) {
-                  $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
-                    foreach ($studentClassKeys as $studentClassKey) {
-                      $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-                    }
-                  });
-                });
-            })
-            ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
-              $fallbackQuery
-                ->doesntHave('classrooms')
-                ->whereDoesntHave('material.classrooms')
-                ->whereHas('material.classroom', function ($classroomQuery) use ($studentClassKeys) {
-                  $classroomQuery->where(function ($titleQuery) use ($studentClassKeys) {
-                    foreach ($studentClassKeys as $studentClassKey) {
-                      $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-                    }
-                  });
-                });
-            });
-        });
-      })
-      ->latest()
-      ->limit(5)
-      ->get();
-  @endphp
-
-  <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-    <div>
-      <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Dashboard Siswa</p>
-      <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Selamat belajar, {{ auth()->user()->name }}</h2>
-      <div class="mt-2 flex flex-wrap gap-2">
-        <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-black text-indigo-700">{{ $studentClass ?? 'Belum punya kelas program' }}</span>
-        <span class="inline-flex rounded-full bg-violet-50 px-3 py-1 text-sm font-black text-violet-700">{{ \App\Models\User::programTypeLabel($programType) }}</span>
-        @foreach($videoAccesses as $access)
-          <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-black text-emerald-700">{{ \App\Models\User::videoAccessLabel($access) }}</span>
-        @endforeach
-        <span class="inline-flex rounded-full bg-cyan-50 px-3 py-1 text-sm font-black text-cyan-700">{{ $branch ?? 'Cabang belum diisi' }}</span>
-        @if(auth()->user()->student_code)
-          <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-700">{{ auth()->user()->student_code }}</span>
-        @endif
-      </div>
-    </div>
-    <a href="{{ route('materials.index') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700">
-      <i class="fa-solid fa-book-open"></i>
-      Lihat Video
-    </a>
-  </div>
-
-  <div class="grid gap-5 md:grid-cols-2">
-    <a href="{{ route('materials.index') }}" class="group rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
-      <div class="grid h-12 w-12 place-items-center rounded-2xl bg-indigo-100 text-indigo-700">
-        <i class="fa-solid fa-layer-group"></i>
-      </div>
-      <h3 class="mt-5 text-xl font-black text-slate-950">Video Pembelajaran</h3>
-      <p class="mt-2 text-sm leading-6 text-slate-500">Akses video pembelajaran sesuai kelas program Anda.</p>
-    </a>
-
-    <a href="{{ route('tasks.index') }}" class="group rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
-      <div class="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-100 text-cyan-700">
-        <i class="fa-solid fa-clipboard-check"></i>
-      </div>
-      <h3 class="mt-5 text-xl font-black text-slate-950">Tugas Terbaru</h3>
-      <p class="mt-2 text-sm leading-6 text-slate-500">Lihat instruksi tugas, deadline, dan kumpulkan pekerjaan Anda.</p>
-    </a>
-  </div>
-
-  <div class="mt-5 grid gap-5 md:grid-cols-3">
-    <a href="{{ route('student.grades') }}" class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
-      <div class="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700">
-        <i class="fa-solid fa-star-half-stroke"></i>
-      </div>
-      <h3 class="mt-5 text-lg font-black text-slate-950">Penilaian</h3>
-      <p class="mt-2 text-sm leading-6 text-slate-500">Pantau nilai tugas yang sudah diperiksa.</p>
-    </a>
-
-    <a href="{{ route('student.attendance') }}" class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
-      <div class="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
-        <i class="fa-solid fa-calendar-check"></i>
-      </div>
-      <h3 class="mt-5 text-lg font-black text-slate-950">Rekap Absensi</h3>
-      <p class="mt-2 text-sm leading-6 text-slate-500">Lihat ringkasan kehadiran di kelas.</p>
-    </a>
-
-    <a href="{{ route('student.reports') }}" class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200">
-      <div class="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-rose-700">
-        <i class="fa-solid fa-chart-line"></i>
-      </div>
-      <h3 class="mt-5 text-lg font-black text-slate-950">Laporan</h3>
-      <p class="mt-2 text-sm leading-6 text-slate-500">Baca ringkasan progres belajar Anda.</p>
-    </a>
-  </div>
-
-  <section class="mt-8 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-    <div class="mb-5 flex items-center justify-between">
-      <h3 class="text-lg font-black text-slate-950">Daftar Tugas Terbaru</h3>
-      <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">5 terbaru</span>
-    </div>
-    <div class="divide-y divide-slate-100">
-      @forelse($latestTasks as $task)
-        <div class="flex flex-col justify-between gap-3 py-4 sm:flex-row sm:items-center">
-          <div>
-            <div class="font-black text-slate-900">{{ $task->title }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ $task->material->title ?? 'Tanpa video' }}</div>
-          </div>
-          <div class="text-sm font-bold text-slate-400">{{ optional($task->due_at)->format('Y-m-d') ?? 'Tanpa deadline' }}</div>
-        </div>
-      @empty
-        <div class="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-500">Belum ada tugas terbaru.</div>
-      @endforelse
-    </div>
-  </section>
+@php $classroom=$classrooms->first(); $colors=['violet'=>'#7c3aed','indigo'=>'#4f46e5','emerald'=>'#059669','rose'=>'#e11d48']; @endphp
+<section class="overflow-hidden rounded-3xl p-6 text-white shadow-lg sm:p-8" style="background:linear-gradient(135deg,#312e81,#4f46e5 55%,#7c3aed)"><div class="flex flex-col justify-between gap-5 md:flex-row md:items-center"><div><p class="text-xs font-black uppercase tracking-widest text-indigo-200">Ruang Belajar Saya</p><h1 class="mt-2 text-3xl font-black">Halo, {{ $student->name }}</h1><p class="mt-2 text-indigo-100">{{ $classroom?->display_name ?: ($student->student_class ?: 'Belum ditempatkan ke kelas') }} · {{ $classroom?->branchMaster?->name ?: $student->branch }}</p><div class="mt-4 flex flex-wrap gap-2"><span class="rounded-full bg-white/15 px-3 py-1 text-xs font-bold">{{ $student->student_code ?: 'Kode belum tersedia' }}</span>@if($classroom?->academicPeriod)<span class="rounded-full bg-white/15 px-3 py-1 text-xs font-bold">{{ $classroom->academicPeriod->name }}</span>@endif</div></div><a href="{{ route('materials.index') }}" class="btn-action rounded-2xl bg-white px-5 py-3 font-black text-indigo-700"><i class="fa-solid fa-play"></i>Mulai Belajar</a></div></section>
+<div class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div class="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-100 text-indigo-700"><i class="fa-solid fa-circle-play"></i></div><span class="text-3xl font-black">{{ $materialCount }}</span></div><div class="mt-4 font-black">Materi Tersedia</div><p class="text-xs text-slate-500">Sesuai enrollment kelas</p></article>
+  <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div class="grid h-11 w-11 place-items-center rounded-2xl bg-violet-100 text-violet-700"><i class="fa-solid fa-images"></i></div><span class="text-3xl font-black">{{ $completedAssignments }}/{{ $assignments->count() }}</span></div><div class="mt-4 font-black">Karya Dikumpulkan</div><div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-violet-600" style="width:{{ $assignmentRate }}%"></div></div></article>
+  <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><i class="fa-solid fa-calendar-check"></i></div><span class="text-3xl font-black">{{ $attendanceRate }}%</span></div><div class="mt-4 font-black">Kehadiran</div><div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-emerald-600" style="width:{{ $attendanceRate }}%"></div></div></article>
+  <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div class="grid h-11 w-11 place-items-center rounded-2xl bg-amber-100 text-amber-700"><i class="fa-solid fa-star"></i></div><span class="text-3xl font-black">{{ $averageScore!==null?number_format($averageScore,1):'-' }}</span></div><div class="mt-4 font-black">Rata-rata Nilai</div><p class="text-xs text-slate-500">Karya dan ujian yang dinilai</p></article>
+</div>
+<div class="mt-6 grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><div><h2 class="text-xl font-black">Aktivitas Belajar</h2><p class="text-sm text-slate-500">Riwayat karya, ujian, dan kehadiran terbaru.</p></div><a href="{{ route('student.reports') }}" class="text-sm font-black text-indigo-600">Lihat laporan →</a></div><div class="mt-5 space-y-2">@forelse($activities as $activity)<div class="flex items-center gap-4 rounded-2xl border border-slate-100 p-3"><div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white" style="background:{{ $colors[$activity['tone']] }}"><i class="{{ $activity['icon'] }}"></i></div><div class="min-w-0 flex-1"><div class="truncate font-black">{{ $activity['title'] }}</div><div class="text-xs font-bold text-slate-500">{{ $activity['type'] }} · {{ $activity['detail'] }}</div></div><time class="shrink-0 text-xs font-bold text-slate-400">{{ optional($activity['date'])->diffForHumans() }}</time></div>@empty<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">Aktivitas belajar akan muncul setelah Anda mengumpulkan karya, menyelesaikan ujian, atau memperoleh absensi.</div>@endforelse</div></section>
+  <div class="space-y-6"><section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="text-lg font-black">Tugas Pertemuan</h2><div class="mt-4 space-y-3">@forelse($assignments->take(5) as $assignment)@php $done=$submissionByAssignment->has($assignment->id); @endphp<a href="{{ route('meeting-assignments.show',$assignment) }}" class="flex items-center gap-3 rounded-2xl border p-3 {{ $done?'border-emerald-200 bg-emerald-50':'border-amber-200 bg-amber-50' }}"><div class="grid h-9 w-9 place-items-center rounded-xl {{ $done?'bg-emerald-600':'bg-amber-500' }} text-white"><i class="fa-solid {{ $done?'fa-check':'fa-clock' }}"></i></div><div class="min-w-0"><div class="truncate text-sm font-black">{{ $assignment->title }}</div><div class="text-xs text-slate-500">{{ $done?'Sudah dikumpulkan':'Belum dikumpulkan' }}</div></div></a>@empty<p class="text-sm text-slate-500">Belum ada tugas pertemuan.</p>@endforelse</div></section>@if($classroom)<section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="text-lg font-black">Jadwal Kelas</h2><div class="mt-3 space-y-2">@forelse($classroom->schedules as $schedule)<div class="rounded-xl bg-slate-50 p-3 text-sm"><b>{{ $schedule->day_label }}</b><div class="text-xs text-slate-500">{{ substr($schedule->starts_at,0,5) }}–{{ substr($schedule->ends_at,0,5) }} · {{ $schedule->room ?: 'Ruang menyusul' }}</div></div>@empty<p class="text-sm text-slate-500">Jadwal belum ditambahkan.</p>@endforelse</div></section>@endif</div>
+</div>
 @endsection

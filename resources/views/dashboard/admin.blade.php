@@ -1,55 +1,11 @@
 @extends('layouts.app')
-
-@section('title', 'Dashboard Admin')
-
+@section('title','Dashboard Admin')
 @section('content')
-  @php
-    $stats = [
-      ['label' => 'Pengguna', 'value' => \App\Models\User::count(), 'icon' => 'fa-solid fa-users', 'tone' => 'bg-indigo-100 text-indigo-700'],
-      ['label' => 'Kelas', 'value' => \App\Models\Classroom::count(), 'icon' => 'fa-solid fa-chalkboard-user', 'tone' => 'bg-cyan-100 text-cyan-700'],
-      ['label' => 'Video', 'value' => \App\Models\Material::count(), 'icon' => 'fa-solid fa-circle-play', 'tone' => 'bg-violet-100 text-violet-700'],
-      ['label' => 'Tugas', 'value' => \App\Models\Task::count(), 'icon' => 'fa-solid fa-clipboard-check', 'tone' => 'bg-rose-100 text-rose-700'],
-    ];
-  @endphp
-
-  <div class="mb-6">
-    <p class="text-sm font-bold uppercase tracking-wider text-indigo-500">Dashboard Admin</p>
-    <h2 class="mt-1 text-3xl font-black tracking-tight text-slate-950">Ringkasan platform</h2>
-    <p class="mt-2 text-slate-500">Pantau pengguna, kelas program, video pembelajaran, dan tugas dari satu tempat.</p>
-  </div>
-
-  <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-    @foreach($stats as $stat)
-      <div class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div class="grid h-12 w-12 place-items-center rounded-2xl {{ $stat['tone'] }}">
-            <i class="{{ $stat['icon'] }}"></i>
-          </div>
-          <span class="text-xs font-black uppercase tracking-wider text-slate-300">Total</span>
-        </div>
-        <div class="mt-6 text-4xl font-black tracking-tight text-slate-950">{{ $stat['value'] }}</div>
-        <div class="mt-1 text-sm font-bold text-slate-500">{{ $stat['label'] }}</div>
-      </div>
-    @endforeach
-  </div>
-
-  <section class="mt-8 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-    <div class="mb-5 flex items-center justify-between">
-      <h3 class="text-lg font-black text-slate-950">Aktivitas Terbaru</h3>
-      <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">Tugas</span>
-    </div>
-    <div class="divide-y divide-slate-100">
-      @forelse(\App\Models\Task::latest()->limit(5)->get() as $task)
-        <div class="flex flex-col justify-between gap-3 py-4 sm:flex-row sm:items-center">
-          <div>
-            <div class="font-black text-slate-900">{{ $task->title }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ $task->material->title ?? 'Tanpa video' }}</div>
-          </div>
-          <div class="text-sm font-bold text-slate-400">{{ $task->created_at->diffForHumans() }}</div>
-        </div>
-      @empty
-        <div class="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-500">Belum ada aktivitas.</div>
-      @endforelse
-    </div>
-  </section>
+@php $colors=['indigo'=>'#4f46e5','cyan'=>'#0891b2','violet'=>'#7c3aed','emerald'=>'#059669']; $icons=['Kelas'=>'fa-chalkboard-user','Akademik'=>'fa-sliders','Tugas Pertemuan'=>'fa-images','Live Streaming'=>'fa-video','Bank Soal'=>'fa-box-archive','Ujian'=>'fa-file-circle-check','Absensi'=>'fa-calendar-check','Video'=>'fa-circle-play','Siswa'=>'fa-user-plus','Profil'=>'fa-user']; @endphp
+<div class="mb-7"><p class="text-sm font-black uppercase tracking-widest text-indigo-500">Dashboard Admin</p><h1 class="mt-1 text-3xl font-black text-slate-950">Ringkasan operasional</h1><p class="mt-2 text-slate-500">Data langsung dari aktivitas akademik, kelas, dan karya siswa.</p></div>
+<div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">@foreach($stats as $stat)<article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" style="border-top:4px solid {{ $colors[$stat['tone']] }}"><div class="flex items-center justify-between"><div class="grid h-12 w-12 place-items-center rounded-2xl text-white" style="background:{{ $colors[$stat['tone']] }}"><i class="{{ $stat['icon'] }}"></i></div><span class="text-xs font-black uppercase tracking-widest text-slate-400">Total</span></div><div class="mt-5 text-4xl font-black text-slate-950">{{ number_format($stat['value']) }}</div><div class="mt-1 text-sm font-bold text-slate-500">{{ $stat['label'] }}</div></article>@endforeach</div>
+<div class="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><div><h2 class="text-xl font-black">Aktivitas Sistem Terbaru</h2><p class="text-sm text-slate-500">Aksi tersimpan otomatis setelah pengguna melakukan perubahan.</p></div><span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700"><i class="fa-solid fa-circle mr-1" style="font-size:7px"></i>Aktif</span></div><div class="mt-5 space-y-1">@forelse($activities as $activity)<div class="flex gap-4 rounded-2xl p-3 hover:bg-slate-50"><div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-100 text-indigo-700"><i class="fa-solid {{ $icons[$activity->module] ?? 'fa-clock-rotate-left' }}"></i></div><div class="min-w-0 flex-1"><div class="font-black text-slate-900">{{ $activity->description }}</div><div class="mt-1 flex flex-wrap gap-2 text-xs font-bold text-slate-400"><span>{{ $activity->module }}</span><span>•</span><span>{{ $activity->created_at->diffForHumans() }}</span><span>•</span><span>{{ $activity->status_code }}</span></div></div></div>@empty<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center"><i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300"></i><div class="mt-3 font-black text-slate-700">Belum ada log baru</div><p class="mt-1 text-sm text-slate-500">Aktivitas akan muncul setelah deployment dan pengguna membuat, mengubah, menghapus, atau mengumpulkan data.</p></div>@endforelse</div></section>
+  <div class="space-y-6"><section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="text-lg font-black">Kapasitas Kelas</h2><p class="text-sm text-slate-500">Kelas dengan anggota terbanyak.</p><div class="mt-5 space-y-4">@forelse($classroomLoad as $classroom)@php $load=$classroom->capacity?min(100,round($classroom->active_enrollments_count/$classroom->capacity*100)):0; @endphp<div><div class="mb-1 flex justify-between gap-3 text-sm"><span class="truncate font-bold">{{ $classroom->display_name }}</span><span class="shrink-0 text-slate-500">{{ $classroom->active_enrollments_count }}/{{ $classroom->capacity }}</span></div><div class="h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-indigo-600" style="width:{{ $load }}%"></div></div></div>@empty<p class="text-sm text-slate-500">Belum ada kelas aktif.</p>@endforelse</div></section><section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="text-lg font-black">Komposisi Pengguna</h2><div class="mt-4 grid grid-cols-2 gap-3">@foreach(['student'=>'Siswa','teacher'=>'Mentor','admin'=>'Admin','super_admin'=>'Super Admin'] as $role=>$label)<div class="rounded-2xl bg-slate-50 p-3"><div class="text-2xl font-black text-indigo-700">{{ $roleMix[$role] ?? 0 }}</div><div class="text-xs font-bold text-slate-500">{{ $label }}</div></div>@endforeach</div></section></div>
+</div>
 @endsection
