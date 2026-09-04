@@ -146,13 +146,31 @@ class LiveStreamController extends Controller
 
     public function status(LiveStreamSession $liveStream)
     {
-        $canAccess = $this->canManage($liveStream->classroom)
+        $isManager = $this->canManage($liveStream->classroom);
+        $canAccess = $isManager
             || ($this->isStudentRole(Auth::user()?->role) && $this->studentCanAccess($liveStream->classroom));
         abort_unless($canAccess, 403);
+
+        $pendingRejoins = $isManager
+            ? $liveStream->participants()
+                ->wherePivot('rejoin_status', 'pending')
+                ->orderBy('live_stream_participants.rejoin_requested_at')
+                ->get()
+                ->map(fn (User $student) => [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'student_code' => $student->student_code,
+                    'requested_at' => $student->pivot->rejoin_requested_at,
+                    'approve_url' => route('live-streams.rejoin.approve', [$liveStream, $student]),
+                ])
+                ->values()
+            : collect();
 
         return response()->json([
             'ended' => ! $liveStream->started_at || now()->gte($liveStream->ends_at),
             'ends_at' => $liveStream->ends_at?->toIso8601String(),
+            'pending_rejoins' => $pendingRejoins,
+            'pending_rejoin_count' => $pendingRejoins->count(),
         ]);
     }
 
@@ -229,6 +247,7 @@ class LiveStreamController extends Controller
         return view('live-streams.room', [
             'liveStream' => $liveStream,
             'isHost' => $isHost,
+            'isManager' => $isManager,
             'jitsiDomain' => $usingJaas ? '8x8.vc' : 'meet.jit.si',
             'jitsiRoomName' => $usingJaas ? $appId.'/'.$roomAlias : $roomAlias,
             'jitsiScriptUrl' => $usingJaas
@@ -289,6 +308,10 @@ class LiveStreamController extends Controller
             ]);
 
         abort_unless($updated === 1, 422, 'Permintaan masuk kembali tidak ditemukan atau sudah diproses.');
+
+        if (request()->expectsJson()) {
+            return response()->json(['message' => 'Permintaan masuk kembali '.$student->name.' telah disetujui.']);
+        }
 
         return back()->with('success', 'Permintaan masuk kembali '.$student->name.' telah disetujui.');
     }

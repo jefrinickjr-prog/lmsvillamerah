@@ -4,7 +4,7 @@
 
 @section('content')
 <style>
-  .meeting-page{margin:-1.5rem -1rem;min-height:calc(100vh - 5rem);padding:1rem}.meeting-shell{background:#0b0f19;border:1px solid #202938;border-radius:24px;box-shadow:0 24px 70px rgb(15 23 42/.24);margin:auto;max-width:1500px;overflow:hidden}.meeting-header{align-items:center;background:#111827;border-bottom:1px solid #263244;display:flex;gap:16px;justify-content:space-between;padding:16px 20px}.meeting-eyebrow{color:#a5b4fc;font-size:11px;font-weight:900;letter-spacing:.12em;margin:0 0 3px;text-transform:uppercase}.meeting-title{color:#fff;font-size:clamp(20px,3vw,28px);font-weight:900;line-height:1.1;margin:0}.meeting-subtitle{color:#94a3b8;font-size:13px;font-weight:700;margin:5px 0 0}.meeting-exit{align-items:center;background:#dc2626;border-radius:12px;color:#fff!important;display:inline-flex;font-size:13px;font-weight:900;gap:8px;min-height:44px;padding:0 16px;text-decoration:none}.meeting-body{display:grid;grid-template-columns:minmax(0,1fr) 280px;min-height:680px}.meeting-main{background:#030712;min-height:680px;position:relative}.jitsi-container{height:100%;inset:0;min-height:680px;position:absolute;width:100%}.jitsi-container iframe{border:0!important;height:100%!important;width:100%!important}.meeting-loading{align-items:center;background:radial-gradient(circle at center,#1f2937,#0b0f19 65%);color:#fff;display:flex;inset:0;justify-content:center;padding:30px;position:absolute;text-align:center;z-index:3}.meeting-loading.is-hidden{display:none}.meeting-loading i{color:#818cf8;font-size:38px}.meeting-loading h3{font-size:19px;font-weight:900;margin:16px 0 0}.meeting-loading p{color:#cbd5e1;font-size:14px;line-height:1.6;margin:8px auto 0;max-width:560px}.meeting-sidebar{background:#f8fafc;border-left:1px solid #263244;color:#0f172a;padding:20px}.meeting-sidebar h3{font-size:15px;font-weight:900;margin:0 0 16px}.meeting-info{background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin-bottom:14px;padding:15px}.meeting-label{color:#64748b;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.meeting-value{font-size:13px;font-weight:900;margin-top:5px}.meeting-tip{background:#eef2ff;border:1px solid #c7d2fe;border-radius:16px;color:#3730a3;font-size:12px;font-weight:700;line-height:1.55;padding:14px}.meeting-retry{background:#4f46e5;border:0;border-radius:12px;color:#fff;display:none;font-size:13px;font-weight:900;margin-top:16px;padding:12px 16px}.meeting-retry.is-visible{display:inline-flex}@media(max-width:900px){.meeting-body{grid-template-columns:1fr}.meeting-main,.jitsi-container{min-height:72vh}.meeting-sidebar{border-left:0;border-top:1px solid #dbe2ea}}@media(max-width:640px){.meeting-page{margin:-1rem;padding:0}.meeting-shell{border:0;border-radius:0}.meeting-header{padding:14px}.meeting-exit{font-size:0;min-width:44px;padding:0 13px}.meeting-main,.jitsi-container{min-height:68vh}}
+  .meeting-page{margin:-1.5rem -1rem;min-height:calc(100vh - 5rem);padding:1rem}.meeting-shell{background:#0b0f19;border:1px solid #202938;border-radius:24px;box-shadow:0 24px 70px rgb(15 23 42/.24);margin:auto;max-width:1500px;overflow:hidden}.meeting-header{align-items:center;background:#111827;border-bottom:1px solid #263244;display:flex;gap:16px;justify-content:space-between;padding:16px 20px}.meeting-eyebrow{color:#a5b4fc;font-size:11px;font-weight:900;letter-spacing:.12em;margin:0 0 3px;text-transform:uppercase}.meeting-title{color:#fff;font-size:clamp(20px,3vw,28px);font-weight:900;line-height:1.1;margin:0}.meeting-subtitle{color:#94a3b8;font-size:13px;font-weight:700;margin:5px 0 0}.meeting-exit{align-items:center;background:#dc2626;border-radius:12px;color:#fff!important;display:inline-flex;font-size:13px;font-weight:900;gap:8px;min-height:44px;padding:0 16px;text-decoration:none}.meeting-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:680px}.meeting-main{background:#030712;min-height:680px;position:relative}.jitsi-container{height:100%;inset:0;min-height:680px;position:absolute;width:100%}.jitsi-container iframe{border:0!important;height:100%!important;width:100%!important}.meeting-loading{align-items:center;background:radial-gradient(circle at center,#1f2937,#0b0f19 65%);color:#fff;display:flex;inset:0;justify-content:center;padding:30px;position:absolute;text-align:center;z-index:3}.meeting-loading.is-hidden{display:none}.meeting-loading i{color:#818cf8;font-size:38px}.meeting-loading h3{font-size:19px;font-weight:900;margin:16px 0 0}.meeting-loading p{color:#cbd5e1;font-size:14px;line-height:1.6;margin:8px auto 0;max-width:560px}.meeting-sidebar{background:#f8fafc;border-left:1px solid #263244;color:#0f172a;max-height:680px;overflow-y:auto;padding:20px}.meeting-sidebar h3{font-size:15px;font-weight:900;margin:0 0 16px}.meeting-info{background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin-bottom:14px;padding:15px}.meeting-label{color:#64748b;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.meeting-value{font-size:13px;font-weight:900;margin-top:5px}.meeting-tip{background:#eef2ff;border:1px solid #c7d2fe;border-radius:16px;color:#3730a3;font-size:12px;font-weight:700;line-height:1.55;padding:14px}.meeting-retry{background:#4f46e5;border:0;border-radius:12px;color:#fff;display:none;font-size:13px;font-weight:900;margin-top:16px;padding:12px 16px}.meeting-retry.is-visible{display:inline-flex}.rejoin-panel{background:#fffbeb;border:1px solid #fcd34d;border-radius:16px;margin-bottom:14px;padding:14px}.rejoin-head{align-items:center;color:#92400e;display:flex;font-size:12px;font-weight:900;justify-content:space-between}.rejoin-count{background:#f59e0b;border-radius:999px;color:#fff;min-width:24px;padding:3px 7px;text-align:center}.rejoin-empty{color:#78716c;font-size:12px;line-height:1.5;margin-top:10px}.rejoin-item{align-items:center;background:#fff;border:1px solid #fde68a;border-radius:12px;display:flex;gap:8px;justify-content:space-between;margin-top:9px;padding:10px}.rejoin-name{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rejoin-code{color:#64748b;font-size:10px;font-weight:700;margin-top:2px}.rejoin-approve{background:#059669;border:0;border-radius:9px;color:#fff;cursor:pointer;font-size:11px;font-weight:900;padding:9px 11px;white-space:nowrap}.rejoin-approve:disabled{cursor:wait;opacity:.55}@media(max-width:900px){.meeting-body{grid-template-columns:1fr}.meeting-main,.jitsi-container{min-height:72vh}.meeting-sidebar{border-left:0;border-top:1px solid #dbe2ea;max-height:none}}@media(max-width:640px){.meeting-page{margin:-1rem;padding:0}.meeting-shell{border:0;border-radius:0}.meeting-header{padding:14px}.meeting-exit{font-size:0;min-width:44px;padding:0 13px}.meeting-main,.jitsi-container{min-height:68vh}}
 </style>
 
 <div class="meeting-page">
@@ -40,6 +40,12 @@
 
       <aside class="meeting-sidebar">
         <h3>Detail Pertemuan</h3>
+        @if($isManager)
+          <section class="rejoin-panel" aria-live="polite">
+            <div class="rejoin-head"><span><i class="fa-solid fa-user-clock mr-2"></i>Permintaan Masuk</span><span id="rejoinCount" class="rejoin-count">0</span></div>
+            <div id="rejoinRequests"><p class="rejoin-empty">Belum ada permintaan masuk kembali.</p></div>
+          </section>
+        @endif
         <div class="meeting-info"><div class="meeting-label">Status Anda</div><div class="meeting-value">{{ $isHost ? 'Host/Penyelenggara' : 'Peserta' }}</div></div>
         <div class="meeting-info"><div class="meeting-label">Jadwal</div><div class="meeting-value">{{ $liveStream->starts_at->format('d M Y, H:i') }}–{{ $liveStream->ends_at->format('H:i') }} WIB</div></div>
         <div class="meeting-info"><div class="meeting-label">Akses</div><div class="meeting-value">Khusus akun LMS pada kelas ini</div></div>
@@ -59,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusUrl = @json(route('live-streams.status', $liveStream));
   const indexUrl = @json(route('live-streams.index'));
   const isHost = @json($isHost);
+  const isManager = @json($isManager);
+  const csrfToken = @json(csrf_token());
+  const rejoinRequests = document.getElementById('rejoinRequests');
+  const rejoinCount = document.getElementById('rejoinCount');
   let api;
   let endingForEveryone = false;
   const fail = message => {
@@ -67,6 +77,33 @@ document.addEventListener('DOMContentLoaded', () => {
     loading.classList.remove('is-hidden');
     loading.querySelector('i').className = 'fa-solid fa-triangle-exclamation';
   };
+  const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));
+  const renderRejoinRequests = requests => {
+    if (!isManager || !rejoinRequests) return;
+    rejoinCount.textContent = requests.length;
+    if (!requests.length) {
+      rejoinRequests.innerHTML = '<p class="rejoin-empty">Belum ada permintaan masuk kembali. Daftar diperbarui otomatis.</p>';
+      return;
+    }
+    rejoinRequests.innerHTML = requests.map(student => `<div class="rejoin-item"><div style="min-width:0"><div class="rejoin-name">${escapeHtml(student.name)}</div><div class="rejoin-code">${escapeHtml(student.student_code || 'Tanpa kode siswa')}</div></div><button type="button" class="rejoin-approve" data-approve-url="${escapeHtml(student.approve_url)}"><i class="fa-solid fa-check"></i> Setujui</button></div>`).join('');
+  };
+  rejoinRequests?.addEventListener('click', async event => {
+    const button = event.target.closest('[data-approve-url]');
+    if (!button) return;
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses';
+    try {
+      const response = await fetch(button.dataset.approveUrl, {method:'PUT',headers:{'X-CSRF-TOKEN':csrfToken,'Accept':'application/json','Content-Type':'application/json'},body:'{}'});
+      if (!response.ok) throw new Error('Persetujuan gagal diproses.');
+      button.closest('.rejoin-item')?.remove();
+      const remaining = rejoinRequests.querySelectorAll('.rejoin-item').length;
+      rejoinCount.textContent = remaining;
+      if (!remaining) rejoinRequests.innerHTML = '<p class="rejoin-empty">Semua permintaan sudah diproses.</p>';
+    } catch (error) {
+      button.disabled = false;
+      button.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Coba Lagi';
+    }
+  });
 
   if (typeof JitsiMeetExternalAPI === 'undefined') {
     fail('Jitsi Meet tidak dapat dimuat. Periksa koneksi internet atau pemblokir konten browser.');
@@ -137,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch(statusUrl, {headers:{'Accept':'application/json'}, cache:'no-store'});
         if (!response.ok) return;
         const session = await response.json();
+        renderRejoinRequests(session.pending_rejoins || []);
         if (session.ended) {
           api.executeCommand('hangup');
           window.location.assign(indexUrl);

@@ -116,6 +116,59 @@ class LiveStreamTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_see_and_approve_pending_rejoin_from_meeting_room(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $teacher = $session->classroom->teacher;
+        $session->participants()->attach($student->id, [
+            'rejoin_status' => 'pending',
+            'rejoin_requested_at' => now(),
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('live-streams.room', $session))
+            ->assertOk()
+            ->assertViewHas('isManager', true)
+            ->assertSee('Permintaan Masuk')
+            ->assertSee('rejoinRequests', false);
+
+        $this->actingAs($teacher)
+            ->getJson(route('live-streams.status', $session))
+            ->assertOk()
+            ->assertJsonPath('pending_rejoin_count', 1)
+            ->assertJsonPath('pending_rejoins.0.id', $student->id)
+            ->assertJsonPath('pending_rejoins.0.name', $student->name)
+            ->assertJsonPath('pending_rejoins.0.approve_url', route('live-streams.rejoin.approve', [$session, $student]));
+
+        $this->actingAs($teacher)
+            ->putJson(route('live-streams.rejoin.approve', [$session, $student]))
+            ->assertOk()
+            ->assertJsonFragment(['message' => 'Permintaan masuk kembali '.$student->name.' telah disetujui.']);
+
+        $this->assertDatabaseHas('live_stream_participants', [
+            'live_stream_session_id' => $session->id,
+            'user_id' => $student->id,
+            'rejoin_status' => 'approved',
+        ]);
+    }
+
+    public function test_student_status_does_not_expose_pending_rejoin_requests(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $otherStudent = User::factory()->create(['role' => 'student']);
+        $session->participants()->attach($student->id, ['rejoin_status' => 'approved']);
+        $session->participants()->attach($otherStudent->id, [
+            'rejoin_status' => 'pending',
+            'rejoin_requested_at' => now(),
+        ]);
+
+        $this->actingAs($student)
+            ->getJson(route('live-streams.status', $session))
+            ->assertOk()
+            ->assertJsonPath('pending_rejoin_count', 0)
+            ->assertJsonPath('pending_rejoins', []);
+    }
+
     public function test_super_admin_can_edit_and_start_live_stream(): void
     {
         [, $session] = $this->makeSession();
