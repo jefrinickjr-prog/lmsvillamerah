@@ -57,7 +57,11 @@
               <i class="fa-solid fa-right-to-bracket"></i><span>Masuk Kembali — Disetujui</span>
             </a>
           @elseif($currentParticipant?->pivot->rejoin_status === 'pending')
-            <button disabled class="btn-action mt-4 min-h-12 w-full cursor-not-allowed rounded-2xl bg-amber-100 px-4 py-3 text-sm text-amber-700 opacity-80">
+            <button disabled
+              class="btn-action mt-4 min-h-12 w-full cursor-not-allowed rounded-2xl bg-amber-100 px-4 py-3 text-sm text-amber-700 opacity-80"
+              data-rejoin-waiting
+              data-status-url="{{ route('live-streams.status', $session) }}"
+              data-room-url="{{ route('live-streams.room', $session) }}">
               <i class="fa-solid fa-clock"></i><span>Pending Persetujuan Admin</span>
             </button>
           @elseif($session->current_user_joined)
@@ -115,4 +119,48 @@
       <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center md:col-span-2 xl:col-span-3"><i class="fa-solid fa-video-slash text-3xl text-slate-300"></i><p class="mt-3 font-black">Belum ada jadwal live streaming.</p></div>
     @endforelse
   </div>
+
+  @if(in_array(strtolower(trim((string) auth()->user()->role)), ['student', 'siswa'], true))
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const waitingButtons = [...document.querySelectorAll('[data-rejoin-waiting]')];
+        if (!waitingButtons.length) return;
+
+        let redirecting = false;
+        const checkApproval = async button => {
+          try {
+            const response = await fetch(button.dataset.statusUrl, {
+              headers: {'Accept': 'application/json'},
+              cache: 'no-store',
+            });
+            if (!response.ok) return;
+
+            const session = await response.json();
+            if (session.ended) {
+              button.innerHTML = '<i class="fa-solid fa-circle-xmark"></i><span>Sesi Sudah Selesai</span>';
+              return;
+            }
+            if (!session.can_rejoin || redirecting) return;
+
+            redirecting = true;
+            const roomUrl = session.room_url || button.dataset.roomUrl;
+            const link = document.createElement('a');
+            link.href = roomUrl;
+            link.className = 'btn-action btn-approve-solid mt-4 min-h-12 w-full rounded-2xl px-4 py-3 text-sm';
+            link.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Disetujui — Masuk Sekarang</span>';
+            button.replaceWith(link);
+
+            window.setTimeout(() => window.location.assign(roomUrl), 500);
+          } catch (error) {
+            // Kegagalan jaringan sementara akan dicoba kembali pada polling berikutnya.
+          }
+        };
+
+        waitingButtons.forEach(checkApproval);
+        window.setInterval(() => waitingButtons.forEach(button => {
+          if (button.isConnected) checkApproval(button);
+        }), 3000);
+      });
+    </script>
+  @endif
 @endsection

@@ -169,6 +169,23 @@ class LiveStreamTest extends TestCase
             ->assertJsonPath('pending_rejoins', []);
     }
 
+    public function test_student_status_immediately_provides_room_access_after_rejoin_is_approved(): void
+    {
+        [$student, $session] = $this->makeSession();
+        $session->participants()->attach($student->id, [
+            'entered_at' => null,
+            'rejoin_status' => 'approved',
+            'rejoin_approved_at' => now(),
+        ]);
+
+        $this->actingAs($student)
+            ->getJson(route('live-streams.status', $session))
+            ->assertOk()
+            ->assertJsonPath('rejoin_status', 'approved')
+            ->assertJsonPath('can_rejoin', true)
+            ->assertJsonPath('room_url', route('live-streams.room', $session));
+    }
+
     public function test_super_admin_can_edit_and_start_live_stream(): void
     {
         [, $session] = $this->makeSession();

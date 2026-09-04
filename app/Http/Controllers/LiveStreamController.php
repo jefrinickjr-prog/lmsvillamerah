@@ -166,11 +166,25 @@ class LiveStreamController extends Controller
                 ->values()
             : collect();
 
+        $currentParticipant = ! $isManager
+            ? DB::table('live_stream_participants')
+                ->where('live_stream_session_id', $liveStream->id)
+                ->where('user_id', Auth::id())
+                ->first()
+            : null;
+
+        $canRejoin = $currentParticipant
+            && $currentParticipant->rejoin_status === 'approved'
+            && $currentParticipant->entered_at === null;
+
         return response()->json([
             'ended' => ! $liveStream->started_at || now()->gte($liveStream->ends_at),
             'ends_at' => $liveStream->ends_at?->toIso8601String(),
             'pending_rejoins' => $pendingRejoins,
             'pending_rejoin_count' => $pendingRejoins->count(),
+            'rejoin_status' => $currentParticipant?->rejoin_status,
+            'can_rejoin' => $canRejoin,
+            'room_url' => $canRejoin ? route('live-streams.room', $liveStream) : null,
         ]);
     }
 
