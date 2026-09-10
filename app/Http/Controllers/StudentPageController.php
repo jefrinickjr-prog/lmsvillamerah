@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Attempt;
 use App\Models\Classroom;
 use App\Models\Material;
+use App\Models\MeetingAssignment;
 use App\Models\MeetingSubmission;
 use App\Models\Submission;
-use App\Models\Task;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -89,50 +90,83 @@ class StudentPageController extends Controller
     {
         $this->authorizeStudentPage();
 
-        $studentClass = Auth::user()?->student_class;
-        $studentClassKeys = User::studentClassLookupKeys($studentClass);
-        $videoAccesses = Auth::user()?->videoAccesses() ?? [User::normalizeProgramType(Auth::user()?->program_type)];
-        $submissions = Submission::where('student_id', Auth::id())->get();
-        $attendances = Attendance::where('student_id', Auth::id())->get();
-        $tasksCount = Task::where(function ($query) use ($studentClassKeys) {
-                $query
-                    ->whereHas('classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys))
-                    ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
-                        $fallbackQuery
-                            ->doesntHave('classrooms')
-                            ->whereHas('material.classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
-                    })
-                    ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
-                        $fallbackQuery
-                            ->doesntHave('classrooms')
-                            ->whereDoesntHave('material.classrooms')
-                            ->whereHas('material.classroom', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
-                    });
-            })
+        $student = Auth::user();
+        $classrooms = $student->activeClassrooms()->where('classrooms.is_active', true)->get();
+        if ($classrooms->isEmpty() && ($fallbackClassroom = $this->studentClassroom($student))) {
+            $classrooms = collect([$fallbackClassroom]);
+        }
+
+        $classroomIds = $classrooms->pluck('id');
+        $assignments = MeetingAssignment::with('classroom')
+            ->whereIn('classroom_id', $classroomIds)
+            ->latest('meeting_date')
+            ->get();
+        $meetingSubmissions = MeetingSubmission::with(['assignment.classroom', 'grader'])
+            ->where('student_id', $student->id)
+            ->whereHas('assignment', fn ($query) => $query->whereIn('classroom_id', $classroomIds))
+            ->latest('submitted_at')
+            ->get();
+        $submissionByAssignment = $meetingSubmissions->keyBy('meeting_assignment_id');
+        $attempts = Attempt::with(['exam.questions'])
+            ->where('student_id', $student->id)
+            ->whereIn('status', ['submitted', 'graded'])
+            ->latest('submitted_at')
+            ->get();
+        $attendances = Attendance::where('student_id', $student->id)->latest('date')->get();
+
+        $tasksCount = $assignments->count();
+        $submittedCount = $assignments->whereIn('id', $meetingSubmissions->pluck('meeting_assignment_id'))->count();
+        $pendingTasksCount = max(0, $tasksCount - $submittedCount);
+        $assignmentRate = $tasksCount > 0 ? (int) round(($submittedCount / $tasksCount) * 100) : 0;
+        $materialsCount = Material::where(fn ($query) => $query
+            ->whereIn('classroom_id', $classroomIds)
+            ->orWhereHas('classrooms', fn ($classroom) => $classroom->whereIn('classrooms.id', $classroomIds)))
             ->count();
-        $materialsCount = Material::whereIn('program_type', $videoAccesses)
-            ->where(function ($query) use ($studentClassKeys) {
-                $query
-                    ->whereHas('classrooms', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys))
-                    ->orWhere(function ($fallbackQuery) use ($studentClassKeys) {
-                        $fallbackQuery
-                            ->doesntHave('classrooms')
-                            ->whereHas('classroom', fn ($classroomQuery) => $this->classroomTitleQuery($classroomQuery, $studentClassKeys));
-                    });
-            })
-            ->count();
-        $submittedCount = $submissions->count();
-        $averageScore = $submissions->whereNotNull('score')->avg('score');
+
+        $scoreItems = $meetingSubmissions->whereNotNull('score')->map(function ($submission) {
+            $maximum = max(1, (float) $submission->assignment->max_score);
+            return [
+                'label' => $submission->assignment->title,
+                'type' => 'Karya',
+                'date' => $submission->graded_at ?? $submission->submitted_at,
+                'score' => round(((float) $submission->score / $maximum) * 100, 1),
+                'display' => $submission->score.'/'.$submission->assignment->max_score,
+            ];
+        })->merge($attempts->whereNotNull('score')->map(function ($attempt) {
+            $maximum = max(1, (float) $attempt->exam->questions->sum('score'));
+            return [
+                'label' => $attempt->exam->title,
+                'type' => 'Ujian',
+                'date' => $attempt->submitted_at ?? $attempt->updated_at,
+                'score' => round(((float) $attempt->score / $maximum) * 100, 1),
+                'display' => number_format(((float) $attempt->score / $maximum) * 100, 1),
+            ];
+        }))->sortByDesc('date')->values();
+        $averageScore = $scoreItems->avg('score');
         $attendanceRate = $attendances->count() > 0
             ? round(($attendances->where('present', true)->count() / $attendances->count()) * 100)
             : 0;
+        $presentCount = $attendances->where('present', true)->count();
+        $gradedCount = $scoreItems->count();
+        $scoreTrend = $scoreItems->take(8)->reverse()->values();
+        $recentAssignments = $assignments->take(6)->map(fn ($assignment) => [
+            'assignment' => $assignment,
+            'submission' => $submissionByAssignment->get($assignment->id),
+        ]);
 
         return view('student.reports', compact(
             'tasksCount',
             'materialsCount',
             'submittedCount',
             'averageScore',
-            'attendanceRate'
+            'attendanceRate',
+            'pendingTasksCount',
+            'assignmentRate',
+            'presentCount',
+            'gradedCount',
+            'scoreTrend',
+            'recentAssignments',
+            'attendances'
         ));
     }
 
@@ -167,17 +201,4 @@ class StudentPageController extends Controller
         })->first();
     }
 
-    private function classroomTitleQuery($query, array $studentClassKeys): void
-    {
-        if ($studentClassKeys === []) {
-            $query->whereRaw('1 = 0');
-            return;
-        }
-
-        $query->where(function ($titleQuery) use ($studentClassKeys) {
-            foreach ($studentClassKeys as $studentClassKey) {
-                $titleQuery->orWhereRaw('LOWER(TRIM(title)) = ?', [$studentClassKey]);
-            }
-        });
-    }
 }
