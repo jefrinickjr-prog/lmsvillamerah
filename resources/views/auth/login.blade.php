@@ -493,7 +493,7 @@
                 <input type="checkbox" name="remember">
                 <span>Ingat saya</span>
               </label>
-              <a class="auth-link" href="#">Lupa kata sandi?</a>
+              <a class="auth-link" href="{{ route('password.request') }}">Lupa kata sandi?</a>
             </div>
 
             <button class="primary-btn" type="submit">Login Sekarang</button>

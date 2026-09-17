@@ -31,6 +31,10 @@ Route::get('/', function () {
 // Simple auth (minimal, without Breeze)
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login'])->middleware('throttle:6,1')->name('login.post');
+Route::get('forgot-password', [LoginController::class, 'showForgotPasswordForm'])->name('password.request');
+Route::post('forgot-password', [LoginController::class, 'sendResetLinkEmail'])->middleware('throttle:6,1')->name('password.email');
+Route::get('reset-password/{token}', [LoginController::class, 'showResetForm'])->name('password.reset');
+Route::post('reset-password', [LoginController::class, 'resetPassword'])->middleware('throttle:6,1')->name('password.update');
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth', 'admin.approved'])->group(function () {
