@@ -14,16 +14,35 @@ use Illuminate\Validation\Rule;
 
 class ClassroomController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         abort_unless($this->canManageClassrooms(), 403);
 
-        $classrooms = Classroom::with(['teacher','program.category','branchMaster','academicPeriod','schedules'])->withCount('activeEnrollments')
-            ->when(Auth::user()?->role === 'teacher', fn ($query) => $query->where('teacher_id', Auth::id()))
-            ->latest()
-            ->get();
+        $user = Auth::user();
+        $classroomsQuery = Classroom::with(['teacher','program.category','branchMaster','academicPeriod','schedules'])->withCount('activeEnrollments')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim($request->string('search')->toString());
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('section_name', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->filled('class_program_id'), fn ($query) => $query->where('class_program_id', $request->integer('class_program_id')))
+            ->when($request->filled('branch_id'), fn ($query) => $query->where('branch_id', $request->integer('branch_id')))
+            ->when($request->filled('academic_period_id'), fn ($query) => $query->where('academic_period_id', $request->integer('academic_period_id')))
+            ->when($request->filled('teacher_id') && in_array($user->role, ['admin', 'super_admin'], true), fn ($query) => $query->where('teacher_id', $request->integer('teacher_id')))
+            ->when($request->filled('delivery_mode'), fn ($query) => $query->where('delivery_mode', $request->string('delivery_mode')->toString()))
+            ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->string('status')->toString() === 'active'))
+            ->when($user->role === 'teacher', fn ($query) => $query->where('teacher_id', $user->id))
+            ->latest('created_at');
 
-        return view('classrooms.index', compact('classrooms'));
+        $classrooms = $classroomsQuery->paginate(7)->withQueryString();
+        $classPrograms = ClassProgram::with('category')->where('is_active', true)->orderBy('sort_order')->get();
+        $branches = Branch::where('is_active', true)->orderBy('name')->get();
+        $periods = AcademicPeriod::where('is_active', true)->orderByDesc('is_default')->orderByDesc('id')->get();
+        $teachers = User::whereIn('role', ['teacher', 'admin', 'super_admin'])->orderBy('name')->get();
+
+        return view('classrooms.index', compact('classrooms', 'classPrograms', 'branches', 'periods', 'teachers'));
     }
 
     public function create()

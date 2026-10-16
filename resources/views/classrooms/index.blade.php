@@ -15,6 +15,78 @@
     </a>
   </div>
 
+  <form method="GET" action="{{ route('classrooms.index') }}" class="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="xl:col-span-2">
+        <label for="search" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Cari kelas</label>
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input id="search" name="search" value="{{ request('search') }}" placeholder="Nama kelas atau bagian..." class="w-full rounded-2xl border-slate-200 py-3 pl-11 pr-4 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+      </div>
+      <div>
+        <label for="class_program_id" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Program kelas</label>
+        <select id="class_program_id" name="class_program_id" class="w-full rounded-2xl border-slate-200 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <option value="">Semua program</option>
+          @foreach($classPrograms as $program)
+            <option value="{{ $program->id }}" @selected(request('class_program_id') == $program->id)>{{ $program->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div>
+        <label for="branch_id" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Cabang</label>
+        <select id="branch_id" name="branch_id" class="w-full rounded-2xl border-slate-200 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <option value="">Semua cabang</option>
+          @foreach($branches as $branch)
+            <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>{{ $branch->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div>
+        <label for="academic_period_id" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Periode akademik</label>
+        <select id="academic_period_id" name="academic_period_id" class="w-full rounded-2xl border-slate-200 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <option value="">Semua periode</option>
+          @foreach($periods as $period)
+            <option value="{{ $period->id }}" @selected(request('academic_period_id') == $period->id)>{{ $period->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      @if(in_array(auth()->user()->role, ['admin', 'super_admin'], true))
+        <div>
+          <label for="teacher_id" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Pengajar</label>
+          <select id="teacher_id" name="teacher_id" class="w-full rounded-2xl border-slate-200 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <option value="">Semua pengajar</option>
+            @foreach($teachers as $teacher)
+              <option value="{{ $teacher->id }}" @selected(request('teacher_id') == $teacher->id)>{{ $teacher->name }}</option>
+            @endforeach
+          </select>
+        </div>
+      @endif
+      <div>
+        <label for="delivery_mode" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Mode belajar</label>
+        <select id="delivery_mode" name="delivery_mode" class="w-full rounded-2xl border-slate-200 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <option value="">Semua mode</option>
+          <option value="online" @selected(request('delivery_mode') === 'online')>Online</option>
+          <option value="offline" @selected(request('delivery_mode') === 'offline')>Offline</option>
+        </select>
+      </div>
+      <div>
+        <label for="status" class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Status</label>
+        <select id="status" name="status" class="w-full rounded-2xl border-slate-200 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <option value="">Semua status</option>
+          <option value="active" @selected(request('status') === 'active')>Aktif</option>
+          <option value="inactive" @selected(request('status') === 'inactive')>Tidak aktif</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-700"><i class="fa-solid fa-filter"></i>Terapkan Filter</button>
+      @if(request()->hasAny(['search', 'class_program_id', 'branch_id', 'academic_period_id', 'teacher_id', 'delivery_mode', 'status']))
+        <a href="{{ route('classrooms.index') }}" class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-200"><i class="fa-solid fa-rotate-left"></i>Reset</a>
+      @endif
+    </div>
+  </form>
+
   <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     @forelse($classrooms as $classroom)
       <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
@@ -59,4 +131,8 @@
       </div>
     @endforelse
   </div>
+
+  @if($classrooms->hasPages())
+    <div class="mt-6">{{ $classrooms->links() }}</div>
+  @endif
 @endsection
