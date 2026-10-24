@@ -15,7 +15,14 @@ class StudentController extends Controller
     public function dashboard()
     {
         $student=Auth::user();
-        $classrooms=$student->activeClassrooms()->with(['program.category','branchMaster','academicPeriod','schedules'])->get();
+        // Ambil penempatan terbaru sebagai sumber utama. Urutan ini juga menjaga
+        // dashboard tetap benar sebelum data duplikat lama selesai diperbaiki migrasi.
+        $classrooms=$student->activeClassrooms()
+            ->with(['program.category','branchMaster','academicPeriod','schedules'])
+            ->orderByDesc('classroom_enrollments.joined_at')
+            ->orderByDesc('classroom_enrollments.id')
+            ->limit(1)
+            ->get();
         if ($classrooms->isEmpty()) {
             $classKeys=User::studentClassLookupKeys($student->student_class);
             $branchKeys=User::branchLookupKeys($student->branch);

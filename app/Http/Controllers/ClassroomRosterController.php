@@ -33,10 +33,13 @@ class ClassroomRosterController extends Controller
         abort_if($classroom->activeEnrollments()->count() >= $classroom->capacity, 422, 'Kapasitas kelas sudah penuh.');
 
         DB::transaction(function() use ($classroom,$student,$data): void {
-            $otherQuery = ClassroomEnrollment::where('student_id',$student->id)->where('status','active')->where('classroom_id','!=',$classroom->id);
-            if ($classroom->class_program_id) $otherQuery->whereHas('classroom', fn($q)=>$q->where('class_program_id',$classroom->class_program_id));
-            else $otherQuery->whereHas('classroom', fn($q)=>$q->whereRaw('LOWER(TRIM(title)) = ?', [User::normalizeStudentClass($classroom->title)]));
-            $otherQuery->update(['status'=>'transferred','left_at'=>now(),'updated_at'=>now()]);
+            // Satu siswa hanya boleh memiliki satu kelas pertemuan aktif. Membatasi
+            // pemindahan berdasarkan program membuat kelas lama (mis. SR Gold)
+            // tetap aktif ketika siswa dipindah ke program lain (SR Minat Seni).
+            ClassroomEnrollment::where('student_id',$student->id)
+                ->where('status','active')
+                ->where('classroom_id','!=',$classroom->id)
+                ->update(['status'=>'transferred','left_at'=>now(),'updated_at'=>now()]);
             ClassroomEnrollment::updateOrCreate(['classroom_id'=>$classroom->id,'student_id'=>$student->id],[
                 'status'=>'active','joined_at'=>now(),'left_at'=>null,'assigned_by'=>Auth::id(),'notes'=>$data['notes']??null,
             ]);

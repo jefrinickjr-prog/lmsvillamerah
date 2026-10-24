@@ -91,7 +91,12 @@ class StudentPageController extends Controller
         $this->authorizeStudentPage();
 
         $student = Auth::user();
-        $classrooms = $student->activeClassrooms()->where('classrooms.is_active', true)->get();
+        $classrooms = $student->activeClassrooms()
+            ->where('classrooms.is_active', true)
+            ->orderByDesc('classroom_enrollments.joined_at')
+            ->orderByDesc('classroom_enrollments.id')
+            ->limit(1)
+            ->get();
         if ($classrooms->isEmpty() && ($fallbackClassroom = $this->studentClassroom($student))) {
             $classrooms = collect([$fallbackClassroom]);
         }
@@ -177,7 +182,11 @@ class StudentPageController extends Controller
 
     private function studentClassroom(User $student): ?Classroom
     {
-        $enrolledClassroom = $student->activeClassrooms()->where('classrooms.is_active', true)->first();
+        $enrolledClassroom = $student->activeClassrooms()
+            ->where('classrooms.is_active', true)
+            ->orderByDesc('classroom_enrollments.joined_at')
+            ->orderByDesc('classroom_enrollments.id')
+            ->first();
         if ($enrolledClassroom) {
             return $enrolledClassroom;
         }

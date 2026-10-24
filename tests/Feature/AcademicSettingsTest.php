@@ -97,4 +97,49 @@ class AcademicSettingsTest extends TestCase
             'classroom_id' => $classroom->id, 'student_id' => $student->id, 'status' => 'active',
         ]);
     }
+
+    public function test_moving_student_to_different_program_closes_old_enrollment_and_updates_dashboard(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approved_at' => now()]);
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'program_type' => 'gambar',
+            'student_class' => 'SR Gold',
+            'branch' => 'Bandung',
+        ]);
+        $category = ProgramCategory::where('code', 'gambar')->firstOrFail();
+        $goldProgram = ClassProgram::where('program_category_id', $category->id)->where('name', 'SR Gold')->firstOrFail();
+        $artProgram = ClassProgram::where('program_category_id', $category->id)->where('name', 'SR Minat Seni')->firstOrFail();
+        $branch = Branch::where('name', 'Bandung')->firstOrFail();
+        $period = AcademicPeriod::where('is_default', true)->firstOrFail();
+        $goldClass = Classroom::create([
+            'class_program_id' => $goldProgram->id, 'branch_id' => $branch->id,
+            'academic_period_id' => $period->id, 'program_type' => 'gambar',
+            'title' => 'SR Gold', 'section_name' => 'Umum', 'capacity' => 16,
+            'branch' => 'Bandung', 'teacher_id' => $teacher->id,
+        ]);
+        $artClass = Classroom::create([
+            'class_program_id' => $artProgram->id, 'branch_id' => $branch->id,
+            'academic_period_id' => $period->id, 'program_type' => 'gambar',
+            'title' => 'SR Minat Seni', 'section_name' => 'Sore A', 'capacity' => 16,
+            'branch' => 'Bandung', 'teacher_id' => $teacher->id,
+        ]);
+
+        $this->actingAs($admin)->post(route('classrooms.enroll', $goldClass), ['student_id' => $student->id])->assertRedirect();
+        $this->actingAs($admin)->post(route('classrooms.enroll', $artClass), ['student_id' => $student->id])->assertRedirect();
+
+        $this->assertDatabaseHas('classroom_enrollments', [
+            'classroom_id' => $goldClass->id, 'student_id' => $student->id, 'status' => 'transferred',
+        ]);
+        $this->assertDatabaseHas('classroom_enrollments', [
+            'classroom_id' => $artClass->id, 'student_id' => $student->id, 'status' => 'active',
+        ]);
+        $this->assertSame(1, $student->activeClassrooms()->count());
+        $this->assertSame('SR Minat Seni', $student->fresh()->student_class);
+
+        $response = $this->actingAs($student)->get(route('dashboard'));
+        $response->assertOk()->assertSee('SR Minat Seni')->assertSee('Sore A');
+        $this->assertSame([$artClass->id], $response->viewData('classrooms')->pluck('id')->all());
+    }
 }
