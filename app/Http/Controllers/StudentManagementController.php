@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -105,6 +106,20 @@ class StudentManagementController extends Controller
         }
 
         $student->save();
+
+        // Profil siswa dan penempatan kelas adalah dua sumber data yang berbeda.
+        // Jika identitas akademik berubah dari halaman admin, enrollment aktif lama
+        // tidak boleh terus menjadi penentu kelas siswa.
+        if ($identityChanged) {
+            DB::table('classroom_enrollments')
+                ->where('student_id', $student->id)
+                ->where('status', 'active')
+                ->update([
+                    'status' => 'transferred',
+                    'left_at' => now(),
+                    'updated_at' => now(),
+                ]);
+        }
 
         return redirect()->route('students.index')->with('success', 'Data siswa berhasil diperbarui.');
     }
